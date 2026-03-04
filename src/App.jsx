@@ -79,6 +79,36 @@ const THEMES = {
     border: "#162236", shadow: "0 2px 16px rgba(0,0,0,0.5)",
     dark: true,
   },
+  "warm-sand": {
+    name: "Warm Sand", mood: "Earthy · Warm · Balanced",
+    bg: "#EDE0D0", bgCard: "#F5EDE0", bgMuted: "#E0CEB8",
+    ink: "#2A1A0E", inkMid: "#6B4525", inkLight: "#A07050",
+    accent: "#A0522D", accentLight: "#A0522D18",
+    amber: "#C4873A", amberLight: "#C4873A18",
+    red: "#B04040", redLight: "#B0404018",
+    border: "#D0B898", shadow: "0 2px 12px rgba(42,26,14,0.1)",
+    dark: false,
+  },
+  "cloud-blue": {
+    name: "Cloud Blue", mood: "Clear · Focused · Balanced",
+    bg: "#E4EBF5", bgCard: "#EEF3FA", bgMuted: "#D5E0EE",
+    ink: "#1A2540", inkMid: "#3A5080", inkLight: "#7090B8",
+    accent: "#3060B0", accentLight: "#3060B018",
+    amber: "#D4924A", amberLight: "#D4924A18",
+    red: "#C04040", redLight: "#C0404018",
+    border: "#C0D0E5", shadow: "0 2px 12px rgba(26,37,64,0.1)",
+    dark: false,
+  },
+  "dusk-plum": {
+    name: "Dusk Plum", mood: "Rich · Creative · Balanced",
+    bg: "#2D2535", bgCard: "#382D42", bgMuted: "#322838",
+    ink: "#F0EBF8", inkMid: "#A090C0", inkLight: "#6A5880",
+    accent: "#9B72CF", accentLight: "#9B72CF18",
+    amber: "#E8A44A", amberLight: "#E8A44A18",
+    red: "#D95F6A", redLight: "#D95F6A18",
+    border: "#4A3858", shadow: "0 2px 16px rgba(0,0,0,0.3)",
+    dark: true,
+  },
 };
 
 // ── Static Data ───────────────────────────────────────────────────────────────
@@ -195,6 +225,27 @@ function Radar({ data, labels, color, border }) {
   );
 }
 
+// ── CircleScore component ─────────────────────────────────────────────────────
+function CircleScore({ value, max=10, color, bg, size=80, label }) {
+  const r=30, cx=40, cy=40, circumference=2*Math.PI*r;
+  const filled=circumference*(value/max);
+  return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
+      <svg width={size} height={size} viewBox="0 0 80 80">
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={bg} strokeWidth="8"/>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="8"
+          strokeDasharray={`${filled} ${circumference-filled}`}
+          strokeDashoffset={circumference*0.25}
+          strokeLinecap="round"
+          style={{ transition:"stroke-dasharray 0.6s ease" }}/>
+        <text x={cx} y={cy-4} textAnchor="middle" dominantBaseline="middle" fontSize="16" fontWeight="700" fill={color} fontFamily="'DM Serif Display',serif">{value}</text>
+        <text x={cx} y={cy+10} textAnchor="middle" fontSize="8" fill={color} fontFamily="'Lato',sans-serif" opacity="0.7">/10</text>
+      </svg>
+      {label && <div style={{ fontSize:10, color, fontWeight:700, textAlign:"center", lineHeight:1.3, maxWidth:72 }}>{label}</div>}
+    </div>
+  );
+}
+
 // ── Theme Switcher Panel ──────────────────────────────────────────────────────
 function ThemePanel({ current, onSelect, onClose, T }) {
   return (
@@ -261,6 +312,7 @@ function FieldError({ msg, T }) {
 
 // ── Onboarding ────────────────────────────────────────────────────────────────
 function Onboarding({ onComplete, T }) {
+  const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     name:"", age:"", transitionAge:"", profession:"",
@@ -280,8 +332,9 @@ function Onboarding({ onComplete, T }) {
   const validate = (s) => {
     const errs = {};
     if (s === 0) {
+      if (!form.name) errs.name = "Your name is required.";
       if (!form.age) errs.age = "Current age is required.";
-      else if (parseInt(form.age) < 18 || parseInt(form.age) > 80) errs.age = "Please enter a valid age between 18 and 80.";
+      else if (parseInt(form.age) < 18 || parseInt(form.age) > 125) errs.age = "Please enter a valid age between 18 and 125.";
       if (!form.transitionAge) errs.transitionAge = "Target transition age is required.";
       else if (parseInt(form.transitionAge) <= parseInt(form.age)) errs.transitionAge = `Must be greater than your current age (${form.age}).`;
       else if (parseInt(form.transitionAge) - parseInt(form.age) < 1) errs.transitionAge = "You need at least 1 year of runway.";
@@ -311,6 +364,73 @@ function Onboarding({ onComplete, T }) {
   const errs = validate(step);
   const canProceed = Object.keys(errs).length === 0;
 
+  if (!started) {
+    return (
+      <div style={{ minHeight:"100vh", display:"flex", fontFamily:"'Lato',sans-serif" }}>
+        {/* LEFT PANEL — content */}
+        <div className="landing-left" style={{ flex:"0 0 58%", background:T.bg, display:"flex", flexDirection:"column", justifyContent:"center", padding:"60px 72px", position:"relative" }}>
+          <div style={{ position:"absolute", top:36, left:72 }}>
+            <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:22, color:T.ink }}>SecondInnings</div>
+          </div>
+          <div style={{ maxWidth:480 }}>
+            <div style={{ fontSize:11, color:T.accent, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:20 }}>Life Design Portal</div>
+            <h1 className="landing-h1" style={{ fontFamily:"'DM Serif Display',serif", fontSize:50, color:T.ink, lineHeight:1.12, margin:"0 0 22px 0" }}>
+              Your next chapter.<br/><span style={{ color:T.accent }}>Designed by you.</span>
+            </h1>
+            <p style={{ fontSize:15, color:T.inkMid, lineHeight:1.85, margin:"0 0 34px 0" }}>
+              For mid-career professionals who know something needs to change — whether that's a new career, your own business, or a life of genuine autonomy. Plan it clearly, not just dream about it.
+            </p>
+            <div style={{ display:"flex", flexDirection:"column", gap:14, marginBottom:40 }}>
+              {[
+                ["◆","Financial Runway","Know exactly when you're financially free to exit"],
+                ["◉","Career Roadmap","A step-by-step transition plan built around your profession"],
+                ["⊕","Location Finder","Find the right city for your next chapter — worldwide"],
+                ["◑","AI Life Coach","Think it through with a personalised AI coach, anytime"],
+              ].map(([icon,title,desc])=>(
+                <div key={title} style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
+                  <div style={{ width:36,height:36,borderRadius:8,background:T.accentLight,border:`1px solid ${T.accent}33`,display:"flex",alignItems:"center",justifyContent:"center",color:T.accent,fontSize:15,flexShrink:0,marginTop:1 }}>{icon}</div>
+                  <div>
+                    <div style={{ fontSize:14, fontWeight:700, color:T.ink }}>{title}</div>
+                    <div style={{ fontSize:13, color:T.inkMid, marginTop:2 }}>{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button onClick={()=>setStarted(true)} style={{ background:T.accent,border:"none",borderRadius:10,padding:"15px 40px",color:T.dark?"#111":"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"'Lato',sans-serif",letterSpacing:"0.03em",boxShadow:`0 4px 20px ${T.accent}44` }}>
+              Start Planning →
+            </button>
+            <div style={{ marginTop:14, fontSize:12, color:T.inkLight }}>Free · No account required · Your data stays in your browser</div>
+          </div>
+        </div>
+        {/* RIGHT PANEL — visual */}
+        <div className="landing-right" style={{ flex:1, background:"linear-gradient(145deg,#0D1F17 0%,#1C3A2E 35%,#3A6B4A 65%,#8B5E2A 100%)", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute",top:-120,right:-120,width:500,height:500,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.06)" }}/>
+          <div style={{ position:"absolute",top:-60,right:-60,width:350,height:350,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.04)" }}/>
+          <div style={{ position:"absolute",bottom:-80,left:-40,width:280,height:280,borderRadius:"50%",background:"rgba(196,135,58,0.15)" }}/>
+          <div style={{ position:"absolute",top:"30%",left:"15%",width:100,height:100,borderRadius:"50%",background:"rgba(92,138,110,0.3)" }}/>
+          <div style={{ position:"relative", zIndex:1, display:"flex", flexDirection:"column", gap:12, width:260 }}>
+            {[
+              { icon:"◆", label:"Financial Runway", value:"8.5 yrs",  note:"to full independence",  offset:0  },
+              { icon:"⊕", label:"Top City Match",   value:"Mysuru",   note:"score 9.2 / 10",        offset:28 },
+              { icon:"◉", label:"Career Roadmap",   value:"6 / 16",   note:"transition tasks done", offset:0  },
+              { icon:"◐", label:"Readiness Score",  value:"7.2 / 10", note:"growing week on week",  offset:28 },
+            ].map((c,i)=>(
+              <div key={i} style={{ background:"rgba(255,255,255,0.09)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,marginLeft:c.offset }}>
+                <div style={{ width:38,height:38,borderRadius:10,background:"rgba(255,255,255,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:"rgba(255,255,255,0.85)",flexShrink:0 }}>{c.icon}</div>
+                <div>
+                  <div style={{ fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700 }}>{c.label}</div>
+                  <div style={{ fontFamily:"'DM Serif Display',serif",fontSize:20,color:"#fff",marginTop:3,lineHeight:1 }}>{c.value}</div>
+                  <div style={{ fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:3 }}>{c.note}</div>
+                </div>
+              </div>
+            ))}
+            <div style={{ textAlign:"center",fontSize:11,color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",textTransform:"uppercase",marginTop:4 }}>+ 5 more tools inside</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight:"100vh", background:T.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
       <div style={{ textAlign:"center", marginBottom:40 }}>
@@ -328,19 +448,12 @@ function Onboarding({ onComplete, T }) {
 
         {step===0 && (
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-            <div style={{ background:T.bgMuted, borderRadius:10, padding:"14px 16px", border:`1px solid ${T.border}` }}>
-              <div style={{ fontSize:13, color:T.inkMid, lineHeight:1.75, marginBottom:10 }}>
-                A personal life design portal for professionals planning a <strong style={{color:T.ink}}>career transition</strong>, a <strong style={{color:T.ink}}>second innings</strong>, or a thoughtful exit from the corporate world — at any stage.
-              </div>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                {["Financial Runway","Career Roadmap","Location Finder","Life Timeline","AI Coach","Decision Tool","Opportunities","Readiness Check"].map(f=>(
-                  <span key={f} style={{ fontSize:11, background:T.accentLight, border:`1px solid ${T.accent}33`, borderRadius:20, padding:"3px 10px", color:T.accent, fontWeight:600 }}>{f}</span>
-                ))}
-              </div>
-            </div>
             <div>
-              <label style={{ fontSize:11, color:T.inkLight, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, display:"block", marginBottom:6 }}>Your Name (optional)</label>
-              <input style={inputStyle(false)} placeholder="What shall we call you?" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
+              <label style={{ fontSize:11, color:T.inkLight, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, display:"block", marginBottom:6 }}>Your Name <span style={{color:T.red}}>*</span></label>
+              <input style={inputStyle(triedNext && errs.name)} placeholder="What shall we call you?" value={form.name}
+                onBlur={()=>setTouched(t=>({...t,name:true}))}
+                onChange={e=>setForm({...form,name:e.target.value})} />
+              {(touched.name || triedNext) && <FieldError msg={errs.name} T={T}/>}
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
               <div>
@@ -615,6 +728,35 @@ export default function App() {
     setShowResetConfirm(false);
   };
 
+  const printProfile = () => {
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>SecondInnings — Life Plan${profile?.name?` · ${profile.name}`:""}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Lato:wght@400;700&display=swap" rel="stylesheet"/>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lato',sans-serif;max-width:800px;margin:40px auto;padding:0 28px;color:#1C3A2E;background:#fff;line-height:1.6}h2{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;border-bottom:1px solid #E2DAD0;padding-bottom:8px;margin:30px 0 14px}.hdr{text-align:center;padding:28px 0;border-bottom:2px solid #5C8A6E;margin-bottom:8px}.brand{font-family:'DM Serif Display',serif;font-size:30px}.meta{font-size:11px;color:#8BA396;margin-top:6px;letter-spacing:0.08em}.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}.card{background:#F7F3EE;border-radius:8px;padding:12px 14px;border:1px solid #E2DAD0}.lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#8BA396;font-weight:700}.val{font-size:22px;color:#5C8A6E;font-family:'DM Serif Display',serif;margin-top:3px}.val.sm{font-size:15px;font-family:'Lato',sans-serif;font-weight:700}.tag{display:inline-block;background:#EBF3EF;color:#5C8A6E;border:1px solid rgba(92,138,110,0.2);padding:3px 11px;border-radius:20px;font-size:11px;margin:2px;font-weight:600}.tag.s{background:#FDECEA;color:#C0564A;border-color:rgba(192,86,74,0.2)}.track{border-left:3px solid #5C8A6E;padding:11px 14px;margin:8px 0;background:#F7F3EE;border-radius:0 8px 8px 0}.tt{font-weight:700;font-size:14px}.td{font-size:12px;color:#4A6358;margin-top:3px}.footer{margin-top:40px;padding-top:14px;border-top:1px solid #E2DAD0;font-size:11px;color:#8BA396;text-align:center}.btn{display:block;margin:20px auto 0;padding:11px 28px;background:#5C8A6E;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif}@media print{.btn{display:none}}</style>
+</head><body>
+<div class="hdr"><div class="brand">SecondInnings</div><div class="meta">Personal Life Plan · ${new Date().toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})}${profile?.name?` · ${profile.name}`:""}</div></div>
+<h2>Profile</h2>
+<div class="g3"><div class="card"><div class="lbl">Current Age</div><div class="val">${profile?.age||"—"}</div></div><div class="card"><div class="lbl">Target Transition</div><div class="val">Age ${profile?.transitionAge||"—"}</div></div><div class="card"><div class="lbl">Runway Left</div><div class="val">${yearsLeft} yrs</div></div></div>
+<div class="g2"><div class="card"><div class="lbl">Profession</div><div class="val sm">${profile?.profession||"—"}</div></div><div class="card"><div class="lbl">Post-Career Path</div><div class="val sm">${profile?.postPath||"—"}</div></div></div>
+<h2>Stress Drivers</h2><div style="margin:8px 0">${profile?.stressDrivers?.map(d=>`<span class="tag s">${d}</span>`).join("")||"—"}</div>
+<h2>Lifestyle Priorities</h2><div style="margin:8px 0">${profile?.priorities?.map(p=>`<span class="tag">${p}</span>`).join("")||"—"}</div>
+<h2>Financial Snapshot</h2>
+<div class="g3"><div class="card"><div class="lbl">Monthly Income</div><div class="val">₹${(fin.income/1000).toFixed(0)}k</div></div><div class="card"><div class="lbl">Monthly Expenses</div><div class="val">₹${(fin.expenses/1000).toFixed(0)}k</div></div><div class="card"><div class="lbl">Monthly Savings</div><div class="val" style="color:${monthlySave>0?"#5C8A6E":"#C0564A"}">₹${Math.abs(monthlySave/1000).toFixed(0)}k</div></div><div class="card"><div class="lbl">Current Savings</div><div class="val">₹${(fin.savings/100000).toFixed(1)}L</div></div><div class="card"><div class="lbl">Target Corpus</div><div class="val">₹${(targetCorpus/100000).toFixed(1)}L</div></div><div class="card"><div class="lbl">Progress</div><div class="val">${Math.round(progress)}%</div></div></div>
+<h2>Transition Tracks — ${profile?.profession}</h2>
+${tracks.map((t,i)=>`<div class="track"><div class="tt">${["🥇","🥈","🥉"][i]||"•"} ${t.title} <span style="font-size:11px;color:#8BA396;font-weight:400">(${t.fit}/10)</span></div><div class="td">${t.desc}</div></div>`).join("")}
+<h2>Career Roadmap</h2>
+${careerSteps.map(s=>`<div class="track"><div class="tt">${s.phase} — ${s.title}</div><div class="td">${s.tasks.join(" · ")}</div></div>`).join("")}
+${sortedLocs.length>0?`<h2>Top Location Matches</h2><div class="g3">${sortedLocs.slice(0,3).map(l=>`<div class="card"><div class="lbl">${l.region}</div><div class="val sm">${l.name}</div><div style="font-size:11px;color:#4A6358;margin-top:4px">${l.whyYou}</div><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">${(l.tags||[]).map(t=>`<span class="tag">${t}</span>`).join("")}</div><div style="margin-top:8px;font-size:10px;color:#8BA396">Overall ${l.overall}/10 · Cost ${l.cost}/10 · Health ${l.healthcare}/10</div></div>`).join("")}</div>`:""}
+<h2>Readiness Check — Latest</h2>
+<div class="g3">${READINESS_DIMS.map(d=>`<div class="card"><div class="lbl">${d.label}</div><div class="val">${latestReadiness[d.key]}<span style="font-size:14px">/10</span></div></div>`).join("")}<div class="card"><div class="lbl">Overall</div><div class="val">${overallReadiness}<span style="font-size:14px">/10</span></div></div></div>
+<button class="btn" onclick="window.print()">⬇ Save as PDF / Print</button>
+<div class="footer">SecondInnings · secondinnings.in · For personal planning purposes only. Not financial, legal, or professional advice.</div>
+</body></html>`);
+    win.document.close();
+    win.focus();
+  };
+
   const sendChat = async () => {
     if(!chatIn.trim() || chatLoading) return;
     const userMsg = chatIn.trim();
@@ -729,6 +871,13 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
     { phase:`${Math.max(2,yearsLeft-2)}y – ${Math.max(3,yearsLeft-1)}y`, title:"Formal Alignment", tasks:["Identify 3 target organisations / institutions","Submit a structured proposal or pilot","Explore contractual / flexible arrangements","Test income optionality (first small retainer)"] },
     { phase:`${Math.max(3,yearsLeft-1)}y – Transition`, title:"Pilot & Validate", tasks:["Run a part-time trial of new role","Validate lifestyle fit and energy levels","Adjust financial model based on new income","Prepare for full transition logistics"] },
   ];
+  const yT1 = yearsLeft >= 6 ? 5 : Math.max(1, Math.floor(yearsLeft * 0.65));
+  const yT2 = Math.max(1, Math.min(Math.round(yearsLeft * 0.3), yT1 - 1));
+  const dynamicPhases = GENERIC_PHASES.map((p,i) => ({
+    ...p,
+    label: ["Now – T-"+yT1, "T-"+yT1+" – T-"+yT2, "T-"+yT2+" – T", "T onwards"][i],
+  }));
+
   const totalTasks = careerSteps.length * 4;
   const doneTasks = Object.values(careerChecks).filter(Boolean).length;
   const careerPct = Math.round((doneTasks / totalTasks) * 100);
@@ -761,18 +910,18 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
   return (
     <div style={{ minHeight:"100vh", background:T.bg, fontFamily:"'Lato',sans-serif", color:T.ink }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
-      <style>{`*{box-sizing:border-box} input[type=range]{accent-color:${T.accent}} @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}} .fade{animation:fadeUp 0.35s ease forwards} @keyframes dot{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}`}</style>
+      <style>{`*{box-sizing:border-box} input[type=range]{accent-color:${T.accent}} @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}} .fade{animation:fadeUp 0.35s ease forwards} @keyframes dot{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}} @media(max-width:900px){.g4{grid-template-columns:1fr 1fr!important}.g3{grid-template-columns:1fr 1fr!important}.g2-fin{grid-template-columns:1fr!important}.hdr-info{display:none!important}.hdr-actions{gap:8px!important}} @media(max-width:600px){.g4{grid-template-columns:1fr!important}.g3{grid-template-columns:1fr!important}.g2{grid-template-columns:1fr!important}.mob-stack{flex-direction:column!important}.mob-pad{padding:16px 14px!important}.landing-right{display:none!important}.landing-left{flex:unset!important;width:100%!important;padding:40px 24px!important}.landing-h1{font-size:34px!important}.tab-bar{gap:2px!important}.tab-bar button{padding:6px 10px!important;font-size:11px!important}}`}</style>
 
       {showThemes && <ThemePanel current={themeId} onSelect={id=>{setThemeId(id)}} onClose={()=>setShowThemes(false)} T={T}/>}
 
       {/* Header */}
       <div style={{ background:T.bgCard, borderBottom:`1px solid ${T.border}`, position:"sticky", top:0, zIndex:200, boxShadow:T.shadow }}>
-        <div style={{ maxWidth:1380, margin:"0 auto", padding:"0 28px" }}>
+        <div style={{ padding:"0 28px" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", height:58 }}>
             <div style={{ display:"flex", alignItems:"center", gap:16 }}>
               <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:21, color:T.ink }}>SecondInnings</div>
               <div style={{ width:1, height:24, background:T.border }}/>
-              <div style={{ fontSize:13, color:T.inkMid }}>{profile.name||"Your"} · {profile.profession} · Age {profile.age} → {profile.transitionAge}</div>
+              <div className="hdr-info" style={{ fontSize:13, color:T.inkMid }}>{profile.name||"Your"} · {profile.profession} · Age {profile.age} → {profile.transitionAge}</div>
             </div>
             <div style={{ display:"flex", gap:12, alignItems:"center" }}>
               <div style={{ textAlign:"right" }}>
@@ -791,7 +940,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
               <button style={{ ...sBtn("ghost"), fontSize:11, padding:"6px 12px" }} onClick={()=>setShowResetConfirm(true)}>↺ Re-do Profile</button>
             </div>
           </div>
-          <div style={{ display:"flex", gap:4, paddingBottom:10, overflowX:"auto" }}>
+          <div className="tab-bar" style={{ display:"flex", gap:4, paddingBottom:10, overflowX:"auto" }}>
             {TABS.map(t=><button key={t.id} style={navBtn(tab===t.id)} onClick={()=>setTab(t.id)}><span style={{ marginRight:5 }}>{t.icon}</span>{t.label}</button>)}
           </div>
         </div>
@@ -799,7 +948,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
 
       {/* ── AI Disclaimer Banner ── */}
       <div style={{ background:T.amberLight, borderTop:`1px solid ${T.border}`, borderBottom:`1px solid ${T.amber}33`, padding:"9px 28px" }}>
-        <div style={{ maxWidth:1380, margin:"0 auto", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
           <span style={{ fontSize:15 }}>🤖</span>
           <span style={{ fontSize:11, color:T.amber, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", flexShrink:0 }}>AI-Generated Content</span>
           <span style={{ fontSize:11, color:T.inkMid, lineHeight:1.6 }}>
@@ -809,16 +958,19 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
       </div>
 
       {/* Body */}
-      <div style={{ maxWidth:1380, margin:"0 auto", padding:"32px 28px" }} className="fade">
+      <div style={{ padding:"32px 28px" }} className="fade">
 
         {/* ── OVERVIEW ── */}
         {tab==="dashboard" && (
           <div>
-            <div style={{ marginBottom:28 }}>
-              <h1 style={{ ...sTitle, fontSize:30 }}>{profile.name?`Good to have you, ${profile.name}.`:"Your Life Design Overview"}</h1>
-              <p style={{ fontSize:13, color:T.inkLight, marginTop:6 }}>Everything you need to design a confident, peaceful transition — at a glance.</p>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:28 }}>
+              <div>
+                <h1 style={{ ...sTitle, fontSize:30 }}>{profile.name?`Good to have you, ${profile.name}.`:"Your Life Design Overview"}</h1>
+                <p style={{ fontSize:13, color:T.inkLight, marginTop:6 }}>Track your key metrics and milestones — all in one place.</p>
+              </div>
+              <button onClick={printProfile} style={{ ...sBtn("ghost"), display:"flex", alignItems:"center", gap:7, flexShrink:0, marginTop:4 }}>⬇ Download Summary</button>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom:20 }}>
+            <div className="g4" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom:20 }}>
 
               {/* Years to Transition */}
               <div style={{ ...card, borderTop:`3px solid ${T.accent}` }}>
@@ -879,18 +1031,18 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                   <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink }}>Transition Readiness</div>
                   <button onClick={()=>setTab("stress")} style={{ background:"none", border:"none", padding:0, color:T.accent, fontSize:11, fontWeight:700, cursor:"pointer", textDecoration:"underline", fontFamily:"'Lato',sans-serif" }}>→ Log this week</button>
                 </div>
-                <div style={{ textAlign:"center", marginBottom:12 }}>
-                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:34, color:T.accent }}>{overallReadiness}<span style={{ fontSize:13 }}>/10</span></div>
-                  <div style={{ fontSize:11, color:T.inkLight }}>Overall readiness score</div>
-                </div>
-                {READINESS_DIMS.map(d=>(
-                  <div key={d.key} style={{ marginBottom:6 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:T.inkMid, marginBottom:2 }}>
-                      <span>{d.label}</span><span>{latestReadiness[d.key]}/10</span>
-                    </div>
-                    <Bar value={latestReadiness[d.key]} color={T.accent} bg={T.bgMuted}/>
+                <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:12 }}>
+                  <CircleScore value={parseFloat(overallReadiness)} color={T.accent} bg={T.bgMuted} size={90}/>
+                  <div>
+                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:13, color:T.ink }}>Overall Readiness</div>
+                    <div style={{ fontSize:11, color:T.inkLight, marginTop:2 }}>Composite of 5 dimensions</div>
                   </div>
-                ))}
+                </div>
+                <div style={{ display:"flex", justifyContent:"space-between", paddingTop:8, borderTop:`1px solid ${T.border}` }}>
+                  {READINESS_DIMS.map(d=>(
+                    <CircleScore key={d.key} value={latestReadiness[d.key]} color={T.accent} bg={T.bgMuted} size={62} label={d.label.split(" ")[0]}/>
+                  ))}
+                </div>
               </div>
               <div style={card}>
                 <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:16 }}>Your Profile</div>
@@ -1010,11 +1162,18 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
             {!aiLocsLoading && aiLocs.length > 0 && (
               <>
                 {/* Region filters */}
-                <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap", alignItems:"center" }}>
+                <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap", alignItems:"center" }}>
                   {["All","Asia","Europe","Americas","Africa","Oceania"].map(f=>(
                     <button key={f} style={sChip(locFilter===f)} onClick={()=>setLocFilter(f)}>{f}</button>
                   ))}
-                  <div style={{ marginLeft:"auto", fontSize:12, color:T.inkLight }}>{selLoc.length}/3 selected for comparison</div>
+                </div>
+                <div style={{ ...cardSm, background:T.accentLight, border:`1px solid ${T.accent}33`, display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+                  <span style={{ fontSize:20, flexShrink:0 }}>💡</span>
+                  <div style={{ fontSize:13, color:T.inkMid }}>
+                    <strong style={{ color:T.accent }}>How to compare: </strong>
+                    Click any city card to select it — a coloured border means selected. Pick <strong style={{ color:T.ink }}>2 or 3 cities</strong> to unlock the side-by-side comparison panel below.
+                    <span style={{ marginLeft:10, fontWeight:700, color:T.accent }}>{selLoc.length}/3 selected</span>
+                  </div>
                 </div>
 
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14, marginBottom:28 }}>
@@ -1121,8 +1280,8 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
           <div>
             <h2 style={sTitle}>◎ Life Phase Timeline</h2>
             <p style={{ fontSize:13, color:T.inkLight, marginTop:4, marginBottom:24 }}>A controlled, intentional path — built around your transition at age {profile.transitionAge||"your target"}.</p>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom:24 }}>
-              {GENERIC_PHASES.map((p,i)=>(
+            <div className="g4" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom:24 }}>
+              {dynamicPhases.map((p,i)=>(
                 <div key={i} style={{ ...card, borderTop:`3px solid ${phaseColors[i]}` }}>
                   <div style={{ display:"inline-block", background:phaseColors[i]+"22", border:`1px solid ${phaseColors[i]+"55"}`, borderRadius:20, padding:"4px 12px", fontSize:11, color:phaseColors[i], fontWeight:700, marginBottom:10 }}>{p.label}</div>
                   <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:16, color:T.ink, marginBottom:8 }}>{p.title}</div>
@@ -1157,7 +1316,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
           <div>
             <h2 style={sTitle}>◆ Financial Runway Calculator</h2>
             <p style={{ fontSize:13, color:T.inkLight, marginTop:4, marginBottom:24 }}>The point where corporate has no psychological power over you.</p>
-            <div style={{ display:"grid", gridTemplateColumns:"360px 1fr", gap:20 }}>
+            <div className="g2-fin" style={{ display:"grid", gridTemplateColumns:"360px 1fr", gap:20 }}>
               <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
                 <div style={card}>
                   <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:16 }}>Your Numbers</div>
@@ -1314,13 +1473,12 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                     </div>
                   </div>
                   <div style={card}>
-                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:16 }}>Dimension Breakdown</div>
-                    {READINESS_DIMS.map(d=>(
-                      <div key={d.key} style={{ marginBottom:10 }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:T.inkMid, marginBottom:3 }}><span>{d.label}</span><span>{latestReadiness[d.key]}/10</span></div>
-                        <Bar value={latestReadiness[d.key]} color={T.accent} bg={T.bgMuted}/>
-                      </div>
-                    ))}
+                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:20 }}>Dimension Breakdown</div>
+                    <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"space-around", gap:16 }}>
+                      {READINESS_DIMS.map(d=>(
+                        <CircleScore key={d.key} value={latestReadiness[d.key]} color={T.accent} bg={T.bgMuted} size={82} label={d.label}/>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div style={card}>
@@ -1485,7 +1643,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
 
       {/* ── Footer ── */}
       <footer style={{ background:T.bgCard, borderTop:`1px solid ${T.border}`, marginTop:0, padding:"36px 28px 28px" }}>
-        <div style={{ maxWidth:1380, margin:"0 auto" }}>
+        <div>
 
           {/* Top row — brand + nav links */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:24, marginBottom:28 }}>
