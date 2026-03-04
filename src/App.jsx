@@ -114,13 +114,20 @@ const DECISION_FILTERS = [
   { q:"Does this reduce volatility in my life?", tag:"Stability" },
   { q:"Does this align with my post-career path?", tag:"Direction" },
 ];
+const READINESS_DIMS = [
+  { key:"financial", label:"Financial Clarity",   q:"How confident are you about your financial plan?" },
+  { key:"direction", label:"Career Direction",     q:"How clear is your post-transition path?" },
+  { key:"energy",    label:"Energy & Wellbeing",   q:"How energized and well do you feel this week?" },
+  { key:"family",    label:"Family Alignment",     q:"How aligned is your family with the transition plan?" },
+  { key:"progress",  label:"Weekly Progress",      q:"How much meaningful progress did you make this week?" },
+];
 const TABS = [
   { id:"dashboard", icon:"◈", label:"Overview" },
   { id:"location", icon:"⊕", label:"Location Finder" },
   { id:"timeline", icon:"◎", label:"Life Timeline" },
   { id:"runway", icon:"◆", label:"Financial Runway" },
   { id:"career", icon:"◉", label:"Career Roadmap" },
-  { id:"stress", icon:"◐", label:"Stress & Energy" },
+  { id:"stress", icon:"◐", label:"Readiness Check" },
   { id:"academic", icon:"◳", label:"Opportunities" },
   { id:"decision", icon:"⊗", label:"Decision Tool" },
   { id:"coach", icon:"◑", label:"AI Coach" },
@@ -321,6 +328,16 @@ function Onboarding({ onComplete, T }) {
 
         {step===0 && (
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+            <div style={{ background:T.bgMuted, borderRadius:10, padding:"14px 16px", border:`1px solid ${T.border}` }}>
+              <div style={{ fontSize:13, color:T.inkMid, lineHeight:1.75, marginBottom:10 }}>
+                A personal life design portal for professionals planning a <strong style={{color:T.ink}}>career transition</strong>, a <strong style={{color:T.ink}}>second innings</strong>, or a thoughtful exit from the corporate world — at any stage.
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                {["Financial Runway","Career Roadmap","Location Finder","Life Timeline","AI Coach","Decision Tool","Opportunities","Readiness Check"].map(f=>(
+                  <span key={f} style={{ fontSize:11, background:T.accentLight, border:`1px solid ${T.accent}33`, borderRadius:20, padding:"3px 10px", color:T.accent, fontWeight:600 }}>{f}</span>
+                ))}
+              </div>
+            </div>
             <div>
               <label style={{ fontSize:11, color:T.inkLight, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, display:"block", marginBottom:6 }}>Your Name (optional)</label>
               <input style={inputStyle(false)} placeholder="What shall we call you?" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
@@ -385,7 +402,7 @@ function Onboarding({ onComplete, T }) {
               {triedNext && <FieldError msg={errs.climate} T={T}/>}
             </div>
             <div>
-              <label style={{ fontSize:11, color:T.inkLight, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, display:"block", marginBottom:8 }}>Monthly Retirement Budget <span style={{color:T.red}}>*</span></label>
+              <label style={{ fontSize:11, color:T.inkLight, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, display:"block", marginBottom:8 }}>Monthly Living Budget (post-transition) <span style={{color:T.red}}>*</span></label>
               <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
                 {BUDGETS.map(o=><button key={o} style={chip(form.budget===o,T.amber)} onClick={()=>setForm({...form,budget:o})}>{o}</button>)}
               </div>
@@ -539,9 +556,8 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [tab, setTab] = useState("dashboard");
   const [fin, setFin] = useState({ income:150000, expenses:65000, savings:800000, targetYears:5 });
-  const [stressLog, setStressLog] = useState([{ week:"Wk 1",s:6,e:7 },{ week:"Wk 2",s:5,e:7 },{ week:"Wk 3",s:6,e:6 },{ week:"Wk 4",s:5,e:8 },{ week:"Wk 5",s:4,e:8 },{ week:"Wk 6",s:5,e:7 }]);
-  const [newS, setNewS] = useState(5);
-  const [newE, setNewE] = useState(7);
+  const [readinessLog, setReadinessLog] = useState([{ week:"Wk 1",financial:5,direction:5,energy:7,family:7,progress:5 },{ week:"Wk 2",financial:6,direction:5,energy:7,family:7,progress:6 },{ week:"Wk 3",financial:6,direction:6,energy:6,family:8,progress:6 },{ week:"Wk 4",financial:7,direction:6,energy:8,family:8,progress:7 },{ week:"Wk 5",financial:7,direction:7,energy:8,family:8,progress:7 },{ week:"Wk 6",financial:8,direction:7,energy:8,family:9,progress:8 }]);
+  const [newReadiness, setNewReadiness] = useState({ financial:6, direction:6, energy:7, family:7, progress:6 });
   const [selLoc, setSelLoc] = useState([]);
   const [locFilter, setLocFilter] = useState("All");
   const [aiLocs, setAiLocs] = useState([]);
@@ -558,6 +574,9 @@ export default function App() {
   const chatRef = useRef(null);
 
   const T = THEMES[themeId];
+
+  const latestReadiness = readinessLog[readinessLog.length - 1] || { financial:0, direction:0, energy:0, family:0, progress:0 };
+  const overallReadiness = ((latestReadiness.financial + latestReadiness.direction + latestReadiness.energy + latestReadiness.family + latestReadiness.progress) / 5).toFixed(1);
 
   // Style helpers (theme-aware)
   const card = { background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:16, padding:24, boxShadow:T.shadow };
@@ -586,8 +605,8 @@ export default function App() {
     setProfile(null);
     setTab("dashboard");
     setFin({ income:150000, expenses:65000, savings:800000, targetYears:5 });
-    setStressLog([{ week:"Wk 1",s:6,e:7 },{ week:"Wk 2",s:5,e:7 },{ week:"Wk 3",s:6,e:6 },{ week:"Wk 4",s:5,e:8 },{ week:"Wk 5",s:4,e:8 },{ week:"Wk 6",s:5,e:7 }]);
-    setNewS(5); setNewE(7);
+    setReadinessLog([{ week:"Wk 1",financial:5,direction:5,energy:7,family:7,progress:5 },{ week:"Wk 2",financial:6,direction:5,energy:7,family:7,progress:6 },{ week:"Wk 3",financial:6,direction:6,energy:6,family:8,progress:6 },{ week:"Wk 4",financial:7,direction:6,energy:8,family:8,progress:7 },{ week:"Wk 5",financial:7,direction:7,energy:8,family:8,progress:7 },{ week:"Wk 6",financial:8,direction:7,energy:8,family:9,progress:8 }]);
+    setNewReadiness({ financial:6, direction:6, energy:7, family:7, progress:6 });
     setSelLoc([]); setLocFilter("All");
     setAiLocs([]); setAiLocsLoading(false); setAiLocsError(null); setAiLocsSearched(false);
     setCareerChecks({});
@@ -618,6 +637,7 @@ User profile:
 - Children's ages: ${profile?.kidsAge || "not applicable"}
 - Ageing parents: ${profile?.agingParents || "not specified"}
 - Family notes: ${profile?.dependentNotes || "none"}
+- Latest readiness scores (1–10): Financial clarity: ${latestReadiness.financial}, Career direction: ${latestReadiness.direction}, Energy & wellbeing: ${latestReadiness.energy}, Family alignment: ${latestReadiness.family}, Weekly progress: ${latestReadiness.progress}. Overall readiness: ${overallReadiness}/10.
 
 Guidelines:
 - Ask ONE deep, thoughtful question at a time — never multiple questions
@@ -644,7 +664,7 @@ Guidelines:
     setAiLocsError(null);
     setAiLocsSearched(true);
     setSelLoc([]);
-    const prompt = `You are a global retirement and lifestyle relocation expert. Based on this person's profile, recommend exactly 9 cities worldwide that best match their needs.
+    const prompt = `You are a global career transition and lifestyle relocation expert. Based on this person's profile, recommend exactly 9 cities worldwide that best match their needs.
 
 Profile:
 - Climate preference: ${profile?.climate || "Any"}
@@ -855,21 +875,22 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
               <div style={card}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink }}>Stress & Energy</div>
-                  <div style={{ display:"flex", gap:12, fontSize:12, color:T.inkLight }}><span><span style={{ color:T.red }}>■</span> Stress</span><span><span style={{ color:T.accent }}>■</span> Energy</span></div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink }}>Transition Readiness</div>
+                  <button onClick={()=>setTab("stress")} style={{ background:"none", border:"none", padding:0, color:T.accent, fontSize:11, fontWeight:700, cursor:"pointer", textDecoration:"underline", fontFamily:"'Lato',sans-serif" }}>→ Log this week</button>
                 </div>
-                <div style={{ display:"flex", gap:6, alignItems:"flex-end", height:80 }}>
-                  {stressLog.map((w,i)=>(
-                    <div key={i} style={{ flex:1, display:"flex", gap:2, alignItems:"flex-end" }}>
-                      <div style={{ flex:1, height:`${w.s*7}px`, background:w.s>7?T.red:T.red+"99", borderRadius:"3px 3px 0 0" }}/>
-                      <div style={{ flex:1, height:`${w.e*7}px`, background:T.accent, borderRadius:"3px 3px 0 0", opacity:0.85 }}/>
+                <div style={{ textAlign:"center", marginBottom:12 }}>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:34, color:T.accent }}>{overallReadiness}<span style={{ fontSize:13 }}>/10</span></div>
+                  <div style={{ fontSize:11, color:T.inkLight }}>Overall readiness score</div>
+                </div>
+                {READINESS_DIMS.map(d=>(
+                  <div key={d.key} style={{ marginBottom:6 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:T.inkMid, marginBottom:2 }}>
+                      <span>{d.label}</span><span>{latestReadiness[d.key]}/10</span>
                     </div>
-                  ))}
-                </div>
-                <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
-                  {stressLog.map((w,i)=><div key={i} style={{ flex:1, textAlign:"center", fontSize:9, color:T.inkLight }}>{w.week}</div>)}
-                </div>
+                    <Bar value={latestReadiness[d.key]} color={T.accent} bg={T.bgMuted}/>
+                  </div>
+                ))}
               </div>
               <div style={card}>
                 <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:16 }}>Your Profile</div>
@@ -1239,60 +1260,87 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
           </div>
         )}
 
-        {/* ── STRESS TRACKER ── */}
+        {/* ── READINESS CHECK ── */}
         {tab==="stress" && (
           <div>
-            <h2 style={sTitle}>◐ Stress & Energy Tracker</h2>
-            <p style={{ fontSize:13, color:T.inkLight, marginTop:4, marginBottom:24 }}>Target zone: stress ≤ 5, energy ≥ 7. Track weekly to spot drift early.</p>
+            <h2 style={sTitle}>◐ Transition Readiness Check</h2>
+            <p style={{ fontSize:13, color:T.inkLight, marginTop:4, marginBottom:24 }}>Track 5 key dimensions of your readiness each week. Scores rise as your plan takes shape and confidence grows.</p>
             <div style={{ display:"grid", gridTemplateColumns:"340px 1fr", gap:20 }}>
               <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
                 <div style={card}>
                   <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:20 }}>Log This Week</div>
-                  {[["Stress Level",newS,setNewS,"Calm","High"],["Energy Level",newE,setNewE,"Low","High"]].map(([lbl,val,setter,lo,hi])=>(
-                    <div key={lbl} style={{ marginBottom:20 }}>
-                      <label style={{ ...sLabel, display:"block", marginBottom:8 }}>{lbl}: {val}/10</label>
-                      <input type="range" min="1" max="10" value={val} onChange={e=>setter(+e.target.value)} style={{ width:"100%" }}/>
-                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:T.inkLight, marginTop:4 }}><span>{lo}</span><span>{hi}</span></div>
+                  {READINESS_DIMS.map(d=>(
+                    <div key={d.key} style={{ marginBottom:20 }}>
+                      <label style={{ ...sLabel, display:"block", marginBottom:4 }}>{d.label}: {newReadiness[d.key]}/10</label>
+                      <div style={{ fontSize:11, color:T.inkLight, marginBottom:6 }}>{d.q}</div>
+                      <input type="range" min="1" max="10" value={newReadiness[d.key]} onChange={e=>setNewReadiness({...newReadiness,[d.key]:+e.target.value})} style={{ width:"100%" }}/>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:T.inkLight, marginTop:3 }}><span>Low</span><span>High</span></div>
                     </div>
                   ))}
-                  <button style={{ ...sBtn(), width:"100%" }} onClick={()=>setStressLog([...stressLog,{ week:`Wk ${stressLog.length+1}`,s:newS,e:newE }])}>Save Entry</button>
+                  <button style={{ ...sBtn(), width:"100%" }} onClick={()=>setReadinessLog([...readinessLog,{ week:`Wk ${readinessLog.length+1}`, ...newReadiness }])}>Save Entry</button>
                 </div>
                 <div style={card}>
                   <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:15, color:T.ink, marginBottom:12 }}>Recent Entries</div>
-                  {stressLog.slice(-5).reverse().map((w,i)=>(
-                    <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${T.border}` }}>
-                      <span style={{ fontSize:13, color:T.inkMid }}>{w.week}</span>
-                      <div style={{ display:"flex", gap:16 }}><span style={{ fontSize:13, color:T.red }}>S: {w.s}</span><span style={{ fontSize:13, color:T.accent }}>E: {w.e}</span></div>
-                    </div>
-                  ))}
+                  {readinessLog.slice(-5).reverse().map((w,i)=>{
+                    const avg = ((w.financial+w.direction+w.energy+w.family+w.progress)/5).toFixed(1);
+                    return (
+                      <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${T.border}` }}>
+                        <span style={{ fontSize:13, color:T.inkMid }}>{w.week}</span>
+                        <span style={{ fontSize:13, color:T.accent, fontWeight:700 }}>{avg}/10</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
                   {[
-                    { label:"Avg Stress", value:(stressLog.reduce((a,b)=>a+b.s,0)/stressLog.length).toFixed(1), color:T.red, target:"Target ≤ 5" },
-                    { label:"Avg Energy", value:(stressLog.reduce((a,b)=>a+b.e,0)/stressLog.length).toFixed(1), color:T.accent, target:"Target ≥ 7" },
-                    { label:"Stress Trend", value:stressLog[stressLog.length-1]?.s<stressLog[0]?.s?"↓ Improving":stressLog[stressLog.length-1]?.s>stressLog[0]?.s?"↑ Watch":"→ Stable", color:stressLog[stressLog.length-1]?.s<stressLog[0]?.s?T.accent:T.amber, target:"Watch over time" },
+                    { label:"Overall Readiness", value:`${overallReadiness}/10`, color:T.accent, sub:"Composite score" },
+                    { label:"Strongest Area", value:READINESS_DIMS.reduce((a,b)=>latestReadiness[a.key]>=latestReadiness[b.key]?a:b).label, color:T.amber, sub:"Best dimension" },
+                    { label:"Trend", value:readinessLog.length>1?((readinessLog[readinessLog.length-1].financial+readinessLog[readinessLog.length-1].direction+readinessLog[readinessLog.length-1].energy+readinessLog[readinessLog.length-1].family+readinessLog[readinessLog.length-1].progress)/5)>((readinessLog[readinessLog.length-2].financial+readinessLog[readinessLog.length-2].direction+readinessLog[readinessLog.length-2].energy+readinessLog[readinessLog.length-2].family+readinessLog[readinessLog.length-2].progress)/5)?"↑ Improving":"→ Stable":"→ Baseline", color:T.accent, sub:"Week over week" },
                   ].map(k=>(
                     <div key={k.label} style={{ ...card, textAlign:"center" }}>
                       <div style={sLabel}>{k.label}</div>
-                      <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:28, color:k.color, margin:"8px 0 4px" }}>{k.value}</div>
-                      <div style={{ fontSize:11, color:T.inkLight }}>{k.target}</div>
+                      <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:k.label==="Strongest Area"?16:28, color:k.color, margin:"8px 0 4px" }}>{k.value}</div>
+                      <div style={{ fontSize:11, color:T.inkLight }}>{k.sub}</div>
                     </div>
                   ))}
                 </div>
-                <div style={card}>
-                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:20 }}>Weekly Trend</div>
-                  <div style={{ display:"flex", gap:8, alignItems:"flex-end", height:120 }}>
-                    {stressLog.map((w,i)=>(
-                      <div key={i} style={{ flex:1, display:"flex", gap:3, alignItems:"flex-end" }}>
-                        <div style={{ flex:1, height:`${(w.s/10)*110}px`, background:w.s>7?T.red:w.s>5?T.amber:T.accent+"88", borderRadius:"4px 4px 0 0", transition:"height 0.4s" }}/>
-                        <div style={{ flex:1, height:`${(w.e/10)*110}px`, background:T.accent, borderRadius:"4px 4px 0 0", opacity:0.8 }}/>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+                  <div style={card}>
+                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:8 }}>Latest Snapshot</div>
+                    <div style={{ display:"flex", justifyContent:"center" }}>
+                      <Radar data={READINESS_DIMS.map(d=>latestReadiness[d.key]||0)} labels={["Finance","Direction","Energy","Family","Progress"]} color={T.accent} border={T.border}/>
+                    </div>
+                  </div>
+                  <div style={card}>
+                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:16 }}>Dimension Breakdown</div>
+                    {READINESS_DIMS.map(d=>(
+                      <div key={d.key} style={{ marginBottom:10 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:T.inkMid, marginBottom:3 }}><span>{d.label}</span><span>{latestReadiness[d.key]}/10</span></div>
+                        <Bar value={latestReadiness[d.key]} color={T.accent} bg={T.bgMuted}/>
                       </div>
                     ))}
                   </div>
-                  <div style={{ display:"flex", gap:8, marginTop:6 }}>{stressLog.map((w,i)=><div key={i} style={{ flex:1, textAlign:"center", fontSize:10, color:T.inkLight }}>{w.week}</div>)}</div>
-                  <div style={{ display:"flex", gap:16, marginTop:12, fontSize:12 }}><span><span style={{ color:T.red }}>■</span> Stress</span><span><span style={{ color:T.accent }}>■</span> Energy</span></div>
+                </div>
+                <div style={card}>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:20 }}>Readiness Trend</div>
+                  <div style={{ display:"flex", gap:8, alignItems:"flex-end", height:120 }}>
+                    {readinessLog.map((w,i)=>{
+                      const avg = (w.financial+w.direction+w.energy+w.family+w.progress)/5;
+                      return (
+                        <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center" }}>
+                          <div style={{ width:"100%", height:`${(avg/10)*110}px`, background:avg>=7?T.accent:avg>=5?T.amber:T.red+"88", borderRadius:"4px 4px 0 0", transition:"height 0.4s", minHeight:4 }}/>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display:"flex", gap:8, marginTop:6 }}>{readinessLog.map((w,i)=><div key={i} style={{ flex:1, textAlign:"center", fontSize:10, color:T.inkLight }}>{w.week}</div>)}</div>
+                  <div style={{ display:"flex", gap:16, marginTop:12, fontSize:12 }}>
+                    <span><span style={{ color:T.accent }}>■</span> Confident (≥7)</span>
+                    <span><span style={{ color:T.amber }}>■</span> Building (5–7)</span>
+                    <span><span style={{ color:T.red+"88" }}>■</span> Needs work (&lt;5)</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1450,7 +1498,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
             <div style={{ display:"flex", gap:40, flexWrap:"wrap" }}>
               {[
                 { label:"Portal Tabs", links:[["Overview","dashboard"],["Location Finder","location"],["Financial Runway","runway"],["Career Roadmap","career"],["AI Coach","coach"]] },
-                { label:"Tools", links:[["Stress & Energy","stress"],["Life Timeline","timeline"],["Opportunities","academic"],["Decision Tool","decision"]] },
+                { label:"Tools", links:[["Readiness Check","stress"],["Life Timeline","timeline"],["Opportunities","academic"],["Decision Tool","decision"]] },
               ].map(col=>(
                 <div key={col.label}>
                   <div style={{ fontSize:11, color:T.inkLight, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>{col.label}</div>
