@@ -5,7 +5,7 @@ const CLAUDE_API_KEY = import.meta.env.VITE_ANTHROPIC_KEY || "";
 
 async function askClaude(messages, systemPrompt, maxTokens=1000) {
   if (!CLAUDE_API_KEY) throw new Error("API key not configured");
-  const body = { model: "claude-sonnet-4-20250514", max_tokens: maxTokens, messages };
+  const body = { model: "claude-sonnet-4-6", max_tokens: maxTokens, messages };
   if (systemPrompt) body.system = systemPrompt;   // only include system when non-empty
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
