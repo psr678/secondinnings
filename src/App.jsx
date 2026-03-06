@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { escapeHtml, calcFinancials, validateStep, matchRegion as matchRegionUtil } from "./utils.js";
 
 // ── Anthropic API ─────────────────────────────────────────────────────────────
 const CLAUDE_API_KEY = import.meta.env.VITE_ANTHROPIC_KEY || "";
@@ -330,40 +331,11 @@ function Onboarding({ onComplete, T }) {
   const toggle = (field, val) => setForm(f=>({ ...f, [field]: f[field].includes(val) ? f[field].filter(x=>x!==val) : [...f[field], val] }));
   const yearsToTransition = form.transitionAge && form.age ? parseInt(form.transitionAge)-parseInt(form.age) : null;
 
-  // Per-step validation rules
-  const validate = (s) => {
-    const errs = {};
-    if (s === 0) {
-      if (!form.name) errs.name = "Your name is required.";
-      if (!form.age) errs.age = "Current age is required.";
-      else if (parseInt(form.age) < 18 || parseInt(form.age) > 125) errs.age = "Please enter a valid age between 18 and 125.";
-      if (!form.transitionAge) errs.transitionAge = "Target transition age is required.";
-      else if (parseInt(form.transitionAge) <= parseInt(form.age)) errs.transitionAge = `Must be greater than your current age (${form.age}).`;
-      else if (parseInt(form.transitionAge) - parseInt(form.age) < 1) errs.transitionAge = "You need at least 1 year of runway.";
-      if (!form.profession) errs.profession = "Please select your current profession.";
-    }
-    if (s === 1) {
-      if (form.stressDrivers.length === 0) errs.stressDrivers = "Please select at least one stress driver — this helps personalise your plan.";
-    }
-    if (s === 2) {
-      if (!form.postPath) errs.postPath = "Please select where you'd like to go after your transition.";
-    }
-    if (s === 3) {
-      if (!form.climate) errs.climate = "Please select a climate preference.";
-      if (!form.budget) errs.budget = "Please select a monthly budget range.";
-      if (form.priorities.length === 0) errs.priorities = "Please select at least one priority.";
-    }
-    if (s === 4) {
-      if (!form.dependents) errs.dependents = "Please indicate your dependent situation.";
-    }
-    return errs;
-  };
-
   const chip = (active, color=T.accent) => ({ background: active ? color+"22" : T.bgMuted, border:`1.5px solid ${active ? color : T.border}`, borderRadius:20, padding:"7px 15px", fontSize:12, color: active ? color : T.inkMid, cursor:"pointer", fontWeight: active ? 700 : 400, transition:"all 0.15s", fontFamily:"'Lato',sans-serif" });
   const btn = (variant="primary") => ({ background: variant==="primary" ? T.accent : variant==="amber" ? T.amber : "transparent", border:`1.5px solid ${variant==="primary" ? T.accent : variant==="amber" ? T.amber : T.border}`, borderRadius:8, padding:"10px 24px", color: variant==="ghost" ? T.inkMid : T.dark ? "#111" : "#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", transition:"all 0.18s" });
   const inputStyle = (fieldErr) => ({ background:T.bgMuted, border:`1.5px solid ${fieldErr ? T.red : T.border}`, borderRadius:8, padding:"10px 14px", color:T.ink, fontSize:14, width:"100%", fontFamily:"'Lato',sans-serif", outline:"none", boxSizing:"border-box" });
 
-  const errs = validate(step);
+  const errs = validateStep(step, form);
   const canProceed = Object.keys(errs).length === 0;
 
   if (!started) {
@@ -1077,11 +1049,12 @@ export default function App() {
   const printProfile = () => {
     const win = window.open('', '_blank');
     if (!win) return;
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>SecondInnings — Life Plan${profile?.name?` · ${profile.name}`:""}</title>
+    const safeName = escapeHtml(profile?.name);
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>SecondInnings — Life Plan${safeName?` · ${safeName}`:""}</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Lato:wght@400;700&display=swap" rel="stylesheet"/>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lato',sans-serif;max-width:800px;margin:40px auto;padding:0 28px;color:#1C3A2E;background:#fff;line-height:1.6}h2{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;border-bottom:1px solid #E2DAD0;padding-bottom:8px;margin:30px 0 14px}.hdr{text-align:center;padding:28px 0;border-bottom:2px solid #5C8A6E;margin-bottom:8px}.brand{font-family:'DM Serif Display',serif;font-size:30px}.meta{font-size:11px;color:#8BA396;margin-top:6px;letter-spacing:0.08em}.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}.card{background:#F7F3EE;border-radius:8px;padding:12px 14px;border:1px solid #E2DAD0}.lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#8BA396;font-weight:700}.val{font-size:22px;color:#5C8A6E;font-family:'DM Serif Display',serif;margin-top:3px}.val.sm{font-size:15px;font-family:'Lato',sans-serif;font-weight:700}.tag{display:inline-block;background:#EBF3EF;color:#5C8A6E;border:1px solid rgba(92,138,110,0.2);padding:3px 11px;border-radius:20px;font-size:11px;margin:2px;font-weight:600}.tag.s{background:#FDECEA;color:#C0564A;border-color:rgba(192,86,74,0.2)}.track{border-left:3px solid #5C8A6E;padding:11px 14px;margin:8px 0;background:#F7F3EE;border-radius:0 8px 8px 0}.tt{font-weight:700;font-size:14px}.td{font-size:12px;color:#4A6358;margin-top:3px}.footer{margin-top:40px;padding-top:14px;border-top:1px solid #E2DAD0;font-size:11px;color:#8BA396;text-align:center}.btn{display:block;margin:20px auto 0;padding:11px 28px;background:#5C8A6E;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif}@media print{.btn{display:none}}</style>
 </head><body>
-<div class="hdr"><div class="brand">SecondInnings</div><div class="meta">Personal Life Plan · ${new Date().toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})}${profile?.name?` · ${profile.name}`:""}</div></div>
+<div class="hdr"><div class="brand">SecondInnings</div><div class="meta">Personal Life Plan · ${new Date().toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})}${safeName?` · ${safeName}`:""}</div></div>
 <h2>Profile</h2>
 <div class="g3"><div class="card"><div class="lbl">Current Age</div><div class="val">${profile?.age||"—"}</div></div><div class="card"><div class="lbl">Target Transition</div><div class="val">Age ${profile?.transitionAge||"—"}</div></div><div class="card"><div class="lbl">Runway Left</div><div class="val">${yearsLeft} yrs</div></div></div>
 <div class="g2"><div class="card"><div class="lbl">Profession</div><div class="val sm">${profile?.profession||"—"}</div></div><div class="card"><div class="lbl">Post-Career Path</div><div class="val sm">${profile?.postPath||"—"}</div></div></div>
@@ -1205,10 +1178,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
     setAiLocsLoading(false);
   };
 
-  const monthlySave = fin.income - fin.expenses;
-  const targetCorpus = fin.expenses * 12 * fin.targetYears;
-  const progress = Math.min((fin.savings / targetCorpus) * 100, 100);
-  const monthsLeft = monthlySave > 0 ? Math.ceil((targetCorpus - fin.savings) / Math.max(monthlySave, 1)) : 9999;
+  const { monthlySave, targetCorpus, progress, monthsLeft } = calcFinancials(fin.income, fin.expenses, fin.savings, fin.targetYears);
   const tracks = TRANSITION_TRACKS[profile?.profession] || TRANSITION_TRACKS["Other Professional"];
   const yearsLeft = profile?.transitionAge && profile?.age ? parseInt(profile.transitionAge) - parseInt(profile.age) : 8;
   const careerSteps = [
@@ -1234,13 +1204,8 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
     Africa: ["south africa","kenya","morocco","egypt","ethiopia","ghana","tanzania","rwanda","namibia","botswana","mauritius","tunisia","senegal","nigeria"],
     Oceania: ["australia","new zealand","fiji","papua","vanuatu"],
   };
-  const matchRegion = (loc, filter) => {
-    const r = (loc.region || "").toLowerCase();
-    const countries = REGION_MAP[filter] || [];
-    return countries.some(c => r.includes(c));
-  };
   const sortedLocs = [...aiLocs].sort((a,b) => (b.overall||0) - (a.overall||0));
-  const filteredLocs = locFilter==="All" ? sortedLocs : sortedLocs.filter(l => matchRegion(l, locFilter));
+  const filteredLocs = locFilter==="All" ? sortedLocs : sortedLocs.filter(l => matchRegionUtil(l, locFilter, REGION_MAP));
   const topLoc = sortedLocs[0] || null;
   const compLocs = sortedLocs.filter(l=>selLoc.includes(l.name));
   const answered = DECISION_FILTERS.map((_,i)=>decAnswers[i]);
@@ -1526,7 +1491,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 </div>
 
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14, marginBottom:28 }}>
-                  {filteredLocs.map((loc, idx)=>{
+                  {filteredLocs.map((loc)=>{
                     const sel=selLoc.includes(loc.name);
                     const isTop = topLoc && loc.name === topLoc.name && locFilter === "All";
                     return (

