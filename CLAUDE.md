@@ -12,21 +12,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev       # Start dev server (Vite, port 5173)
+npm run dev       # Start Vite dev server (port 5173) — AI calls use dev fallback
+vercel dev        # Start Vite + Vercel functions locally — AI calls go via /api/ai
 npm run build     # Production build → dist/
 npm run preview   # Preview production build locally
+npm test          # Run Vitest test suite (53 tests)
+npm run test:watch  # Watch mode
 ```
-
-No test runner or linter is currently configured.
 
 ## Environment
 
-Copy `.env.example` to `.env` and set:
+Copy `.env.example` to `.env.local` and configure:
+
+**Production / `vercel dev` (secure — key never in browser):**
+```
+ANTHROPIC_KEY=your-api-key-here
+```
+Set this in Vercel Dashboard → Project → Settings → Environment Variables.
+
+**Local dev fallback (only when running plain `npm run dev` without Vercel CLI):**
 ```
 VITE_ANTHROPIC_KEY=your-api-key-here
 ```
+This is embedded in the browser bundle — never set it in production.
 
-This key powers the AI Coach tab (direct browser → Anthropic API calls using `dangerouslyAllowBrowser: true`).
+## AI Architecture
+
+All AI calls go through `askClaude()` in `src/App.jsx`:
+- **Production**: `POST /api/ai` → `api/ai.js` serverless function → Anthropic API
+  - Key is server-side only (`ANTHROPIC_KEY`), never in browser bundle
+  - CORS restricted to `secondinnings.in` and preview deployments
+  - Request validated: body size, message count, content length, max_tokens capped
+- **Dev fallback**: if `/api/ai` returns 404, falls back to direct browser call using `VITE_ANTHROPIC_KEY`
 
 ## Architecture
 
@@ -63,7 +80,7 @@ The entire application lives in two source files:
 8. Decision Tool
 9. AI Coach (chat interface to Claude via `askClaude()`)
 
-**AI integration:** `askClaude(systemPrompt, userMessage, history)` calls `claude-sonnet-4-20250514` directly from the browser. It is used in both the Location Finder and AI Coach tabs.
+**AI integration:** `askClaude(messages, systemPrompt, maxTokens)` routes through `POST /api/ai` (serverless proxy). It is used in both the Location Finder and AI Coach tabs.
 
 ### State persistence
 

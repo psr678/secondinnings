@@ -1,21 +1,39 @@
 import React, { useState, useRef } from "react";
 import { escapeHtml, calcFinancials, validateStep, matchRegion as matchRegionUtil } from "./utils.js";
 
-// ── Anthropic API ─────────────────────────────────────────────────────────────
-const CLAUDE_API_KEY = import.meta.env.VITE_ANTHROPIC_KEY || "";
+// ── AI API ─────────────────────────────────────────────────────────────────
+// Production: /api/ai (Vercel serverless proxy — key never in browser bundle).
+// Dev fallback: if /api/ai returns 404 (no Vercel CLI running), falls back to
+//               a direct Anthropic call using VITE_ANTHROPIC_KEY (local only).
+const DEV_KEY = import.meta.env.VITE_ANTHROPIC_KEY || "";
 
-async function askClaude(messages, systemPrompt, maxTokens=1000) {
-  if (!CLAUDE_API_KEY) throw new Error("API key not configured");
-  const body = { model: "claude-sonnet-4-6", max_tokens: maxTokens, messages };
-  if (systemPrompt) body.system = systemPrompt;   // only include system when non-empty
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+async function askClaude(messages, systemPrompt, maxTokens = 1000) {
+  const body = { max_tokens: maxTokens, messages };
+  if (systemPrompt) body.system = systemPrompt;
+
+  // Try the server-side proxy first (production + `vercel dev`)
+  const proxyRes = await fetch("/api/ai", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-api-key": CLAUDE_API_KEY, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  return data.content?.map((b) => b.text || "").join("") || "…";
+
+  if (proxyRes.status !== 404) {
+    const data = await proxyRes.json();
+    if (!proxyRes.ok || data.error) throw new Error(data.error || "Request failed");
+    return data.content?.map((b) => b.text || "").join("") || "…";
+  }
+
+  // Dev-only fallback: direct browser→Anthropic (key visible in DevTools)
+  if (!DEV_KEY) throw new Error("Run `vercel dev` or set VITE_ANTHROPIC_KEY in .env.local for local dev");
+  const dr = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": DEV_KEY, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages, ...(systemPrompt ? { system: systemPrompt } : {}) }),
+  });
+  const dd = await dr.json();
+  if (dd.error) throw new Error(dd.error.message);
+  return dd.content?.map((b) => b.text || "").join("") || "…";
 }
 
 // ── Themes ────────────────────────────────────────────────────────────────────
