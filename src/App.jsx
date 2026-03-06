@@ -314,6 +314,8 @@ function FieldError({ msg, T }) {
 function Onboarding({ onComplete, T }) {
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payPlan, setPayPlan] = useState(null);
   const [form, setForm] = useState({
     name:"", age:"", transitionAge:"", profession:"",
     stressDrivers:[], postPath:"",
@@ -366,67 +368,411 @@ function Onboarding({ onComplete, T }) {
 
   if (!started) {
     return (
-      <div style={{ minHeight:"100vh", display:"flex", fontFamily:"'Lato',sans-serif" }}>
-        {/* LEFT PANEL — content */}
-        <div className="landing-left" style={{ flex:"0 0 58%", background:T.bg, display:"flex", flexDirection:"column", justifyContent:"center", padding:"60px 72px", position:"relative" }}>
-          <div style={{ position:"absolute", top:36, left:72 }}>
-            <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:22, color:T.ink }}>SecondInnings</div>
+      <div style={{ background:T.bg, fontFamily:"'Lato',sans-serif", overflowX:"hidden" }}>
+
+        {/* ── STICKY NAVBAR ─────────────────────────────────────────────────── */}
+        <nav style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, background:T.bgCard+"EE", backdropFilter:"blur(12px)", borderBottom:`1px solid ${T.border}`, padding:"0 48px", display:"flex", alignItems:"center", justifyContent:"space-between", height:64 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ width:28, height:28, borderRadius:7, background:T.accent, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>🌿</div>
+            <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink }}>SecondInnings</div>
           </div>
-          <div style={{ maxWidth:480 }}>
-            <div style={{ fontSize:11, color:T.accent, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:20 }}>Life Design Portal</div>
-            <h1 className="landing-h1" style={{ fontFamily:"'DM Serif Display',serif", fontSize:50, color:T.ink, lineHeight:1.12, margin:"0 0 22px 0" }}>
-              Your next chapter.<br/><span style={{ color:T.accent }}>Designed by you.</span>
-            </h1>
-            <p style={{ fontSize:15, color:T.inkMid, lineHeight:1.85, margin:"0 0 34px 0" }}>
-              For mid-career professionals who know something needs to change — whether that's a new career, your own business, or a life of genuine autonomy. Plan it clearly, not just dream about it.
-            </p>
-            <div style={{ display:"flex", flexDirection:"column", gap:14, marginBottom:40 }}>
+          <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+            {[["Purpose","#purpose"],["Your Journey","#journey"],["Why It Matters","#why"],["Choose Your Path","#pricing"]].map(([label,href])=>(
+              <a key={label} href={href} style={{ padding:"7px 16px", color:T.inkMid, fontSize:13, fontWeight:600, textDecoration:"none", borderRadius:8, transition:"all 0.15s", fontFamily:"'Lato',sans-serif" }}
+                onMouseEnter={e=>{ e.currentTarget.style.color=T.accent; e.currentTarget.style.background=T.accentLight; }}
+                onMouseLeave={e=>{ e.currentTarget.style.color=T.inkMid; e.currentTarget.style.background="transparent"; }}>
+                {label}
+              </a>
+            ))}
+            <button onClick={()=>setStarted(true)} style={{ background:T.accent, border:"none", borderRadius:8, padding:"8px 20px", color:T.dark?"#111":"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", marginLeft:8 }}>
+              Start Free →
+            </button>
+          </div>
+        </nav>
+
+        {/* ── HERO ──────────────────────────────────────────────────────────── */}
+        <div style={{ minHeight:"100vh", display:"flex", position:"relative", paddingTop:64 }}>
+          {/* LEFT PANEL */}
+          <div className="landing-left" style={{ flex:"0 0 58%", background:T.bg, display:"flex", flexDirection:"column", justifyContent:"center", padding:"60px 72px", position:"relative" }}>
+            <div style={{ position:"absolute", top:36, left:72, display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:32, height:32, borderRadius:8, background:T.accent, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>🌿</div>
+              <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:22, color:T.ink }}>SecondInnings</div>
+            </div>
+            <div style={{ maxWidth:480 }}>
+              <div style={{ display:"inline-block", fontSize:11, color:T.accent, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:20, background:T.accentLight, border:`1px solid ${T.accent}33`, borderRadius:20, padding:"5px 14px" }}>Life Design Portal</div>
+              <h1 className="landing-h1" style={{ fontFamily:"'DM Serif Display',serif", fontSize:50, color:T.ink, lineHeight:1.12, margin:"0 0 22px 0" }}>
+                Your next chapter.<br/><span style={{ color:T.accent }}>Designed by you.</span>
+              </h1>
+              <p style={{ fontSize:15, color:T.inkMid, lineHeight:1.85, margin:"0 0 34px 0" }}>
+                For mid-career professionals who know something needs to change — whether that's a new career, your own business, or a life of genuine autonomy. Plan it clearly, not just dream about it.
+              </p>
+              <div style={{ display:"flex", flexDirection:"column", gap:14, marginBottom:40 }}>
+                {[
+                  ["◆","Financial Runway","Know exactly when you're financially free to exit"],
+                  ["◉","Career Roadmap","A step-by-step transition plan built around your profession"],
+                  ["⊕","Location Finder","Find the right city for your next chapter — worldwide"],
+                  ["◑","AI Life Coach","Think it through with a personalised AI coach, anytime"],
+                ].map(([icon,title,desc])=>(
+                  <div key={title} style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
+                    <div style={{ width:36,height:36,borderRadius:8,background:T.accentLight,border:`1px solid ${T.accent}33`,display:"flex",alignItems:"center",justifyContent:"center",color:T.accent,fontSize:15,flexShrink:0,marginTop:1 }}>{icon}</div>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:700, color:T.ink }}>{title}</div>
+                      <div style={{ fontSize:13, color:T.inkMid, marginTop:2 }}>{desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display:"flex", gap:14, alignItems:"center", flexWrap:"wrap", marginBottom:14 }}>
+                <button onClick={()=>setStarted(true)} style={{ background:T.accent,border:"none",borderRadius:10,padding:"15px 40px",color:T.dark?"#111":"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"'Lato',sans-serif",letterSpacing:"0.03em",boxShadow:`0 4px 20px ${T.accent}44` }}>
+                  Start Planning →
+                </button>
+                <a href="#explore" style={{ fontSize:14, color:T.accent, textDecoration:"none", fontWeight:600, borderBottom:`1px solid ${T.accent}55`, paddingBottom:2 }}>
+                  Explore Opportunities ↓
+                </a>
+              </div>
+              <div style={{ fontSize:12, color:T.inkLight }}>✓ Free &nbsp;·&nbsp; ✓ No account required &nbsp;·&nbsp; ✓ Your data stays private</div>
+            </div>
+          </div>
+          {/* RIGHT PANEL — visual */}
+          <div className="landing-right" style={{ flex:1, background:"linear-gradient(145deg,#0D1F17 0%,#1C3A2E 35%,#3A6B4A 65%,#8B5E2A 100%)", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden" }}>
+            <div style={{ position:"absolute",top:-120,right:-120,width:500,height:500,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.06)" }}/>
+            <div style={{ position:"absolute",top:-60,right:-60,width:350,height:350,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.04)" }}/>
+            <div style={{ position:"absolute",bottom:-80,left:-40,width:280,height:280,borderRadius:"50%",background:"rgba(196,135,58,0.15)" }}/>
+            <div style={{ position:"absolute",top:"30%",left:"15%",width:100,height:100,borderRadius:"50%",background:"rgba(92,138,110,0.3)" }}/>
+            <div style={{ position:"relative", zIndex:1, display:"flex", flexDirection:"column", gap:12, width:260 }}>
               {[
-                ["◆","Financial Runway","Know exactly when you're financially free to exit"],
-                ["◉","Career Roadmap","A step-by-step transition plan built around your profession"],
-                ["⊕","Location Finder","Find the right city for your next chapter — worldwide"],
-                ["◑","AI Life Coach","Think it through with a personalised AI coach, anytime"],
-              ].map(([icon,title,desc])=>(
-                <div key={title} style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
-                  <div style={{ width:36,height:36,borderRadius:8,background:T.accentLight,border:`1px solid ${T.accent}33`,display:"flex",alignItems:"center",justifyContent:"center",color:T.accent,fontSize:15,flexShrink:0,marginTop:1 }}>{icon}</div>
+                { icon:"◆", label:"Financial Runway", value:"8.5 yrs",  note:"to full independence",  offset:0  },
+                { icon:"⊕", label:"Top City Match",   value:"Mysuru",   note:"score 9.2 / 10",        offset:28 },
+                { icon:"◉", label:"Career Roadmap",   value:"6 / 16",   note:"transition tasks done", offset:0  },
+                { icon:"◐", label:"Readiness Score",  value:"7.2 / 10", note:"growing week on week",  offset:28 },
+              ].map((c,i)=>(
+                <div key={i} style={{ background:"rgba(255,255,255,0.09)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,marginLeft:c.offset }}>
+                  <div style={{ width:38,height:38,borderRadius:10,background:"rgba(255,255,255,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:"rgba(255,255,255,0.85)",flexShrink:0 }}>{c.icon}</div>
                   <div>
-                    <div style={{ fontSize:14, fontWeight:700, color:T.ink }}>{title}</div>
-                    <div style={{ fontSize:13, color:T.inkMid, marginTop:2 }}>{desc}</div>
+                    <div style={{ fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700 }}>{c.label}</div>
+                    <div style={{ fontFamily:"'DM Serif Display',serif",fontSize:20,color:"#fff",marginTop:3,lineHeight:1 }}>{c.value}</div>
+                    <div style={{ fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:3 }}>{c.note}</div>
                   </div>
                 </div>
               ))}
+              <div style={{ textAlign:"center",fontSize:11,color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",textTransform:"uppercase",marginTop:4 }}>+ 5 more tools inside</div>
             </div>
-            <button onClick={()=>setStarted(true)} style={{ background:T.accent,border:"none",borderRadius:10,padding:"15px 40px",color:T.dark?"#111":"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"'Lato',sans-serif",letterSpacing:"0.03em",boxShadow:`0 4px 20px ${T.accent}44` }}>
-              Start Planning →
-            </button>
-            <div style={{ marginTop:14, fontSize:12, color:T.inkLight }}>Free · No account required · Your data stays in your browser</div>
+          </div>
+          {/* Scroll hint */}
+          <div style={{ position:"absolute", bottom:28, left:"29%", transform:"translateX(-50%)", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
+            <div style={{ fontSize:11, color:T.inkLight, letterSpacing:"0.1em", textTransform:"uppercase", opacity:0.6 }}>Scroll to explore</div>
+            <div style={{ fontSize:18, color:T.inkLight, opacity:0.5 }}>↓</div>
           </div>
         </div>
-        {/* RIGHT PANEL — visual */}
-        <div className="landing-right" style={{ flex:1, background:"linear-gradient(145deg,#0D1F17 0%,#1C3A2E 35%,#3A6B4A 65%,#8B5E2A 100%)", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden" }}>
-          <div style={{ position:"absolute",top:-120,right:-120,width:500,height:500,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.06)" }}/>
-          <div style={{ position:"absolute",top:-60,right:-60,width:350,height:350,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.04)" }}/>
-          <div style={{ position:"absolute",bottom:-80,left:-40,width:280,height:280,borderRadius:"50%",background:"rgba(196,135,58,0.15)" }}/>
-          <div style={{ position:"absolute",top:"30%",left:"15%",width:100,height:100,borderRadius:"50%",background:"rgba(92,138,110,0.3)" }}/>
-          <div style={{ position:"relative", zIndex:1, display:"flex", flexDirection:"column", gap:12, width:260 }}>
-            {[
-              { icon:"◆", label:"Financial Runway", value:"8.5 yrs",  note:"to full independence",  offset:0  },
-              { icon:"⊕", label:"Top City Match",   value:"Mysuru",   note:"score 9.2 / 10",        offset:28 },
-              { icon:"◉", label:"Career Roadmap",   value:"6 / 16",   note:"transition tasks done", offset:0  },
-              { icon:"◐", label:"Readiness Score",  value:"7.2 / 10", note:"growing week on week",  offset:28 },
-            ].map((c,i)=>(
-              <div key={i} style={{ background:"rgba(255,255,255,0.09)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,marginLeft:c.offset }}>
-                <div style={{ width:38,height:38,borderRadius:10,background:"rgba(255,255,255,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:"rgba(255,255,255,0.85)",flexShrink:0 }}>{c.icon}</div>
-                <div>
-                  <div style={{ fontSize:10,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700 }}>{c.label}</div>
-                  <div style={{ fontFamily:"'DM Serif Display',serif",fontSize:20,color:"#fff",marginTop:3,lineHeight:1 }}>{c.value}</div>
-                  <div style={{ fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:3 }}>{c.note}</div>
+
+        {/* ── SECTION 1: PURPOSE — WHAT IS SECOND INNINGS ───────────────────── */}
+        <div id="purpose" style={{ background:T.bgCard, padding:"90px 60px" }}>
+          <div style={{ maxWidth:1100, margin:"0 auto" }}>
+            <div style={{ textAlign:"center", marginBottom:64 }}>
+              <div style={{ display:"inline-block", fontSize:11, color:T.accent, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:16, background:T.accentLight, border:`1px solid ${T.accent}33`, borderRadius:20, padding:"5px 14px" }}>Our Purpose</div>
+              <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 20px 0", lineHeight:1.18 }}>
+                What is Second Innings?
+              </h2>
+              <p style={{ fontSize:16, color:T.inkMid, lineHeight:1.85, maxWidth:640, margin:"0 auto" }}>
+                A platform built for mid-career professionals who are ready to design the next phase of their life — on their own terms, with clarity and confidence.
+              </p>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:24 }}>
+              {[
+                { icon:"🎯", title:"New Opportunities", desc:"Discover career paths, businesses, and lifestyles tailored to your skills, experience, and dreams — far beyond what a typical job board shows.", color:T.accent },
+                { icon:"🧭", title:"Guided Planning", desc:"Real, actionable plans — not just inspiration. Financial runway, career roadmaps, and location intelligence to ground your vision.", color:T.amber },
+                { icon:"🌍", title:"Location Freedom", desc:"Find cities worldwide that match your budget, climate preferences, and lifestyle priorities so your geography works for you.", color:T.accent },
+                { icon:"🤖", title:"AI-Powered Insight", desc:"A personal AI life coach available 24/7, helping you think clearly through every transition decision — without judgment.", color:T.amber },
+              ].map((card, i) => (
+                <div key={i} style={{ background:T.bg, border:`1px solid ${T.border}`, borderRadius:18, padding:32, cursor:"default", transition:"transform 0.2s, box-shadow 0.2s" }}
+                  onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-5px)"; e.currentTarget.style.boxShadow=T.shadow; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="none"; }}>
+                  <div style={{ width:56, height:56, borderRadius:14, background:card.color+"18", border:`1px solid ${card.color}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, marginBottom:20 }}>{card.icon}</div>
+                  <div style={{ fontSize:16, fontWeight:700, color:T.ink, marginBottom:10, fontFamily:"'DM Serif Display',serif" }}>{card.title}</div>
+                  <div style={{ fontSize:13, color:T.inkMid, lineHeight:1.75 }}>{card.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign:"center", marginTop:48 }}>
+              <button onClick={()=>setStarted(true)} style={{ background:T.accent, border:"none", borderRadius:10, padding:"14px 40px", color:T.dark?"#111":"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", boxShadow:`0 4px 20px ${T.accent}33` }}>
+                Explore the Platform →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── SECTION 2: HOW IT HELPS — 3 STEPS ────────────────────────────── */}
+        <div id="journey" style={{ background:T.bg, padding:"90px 60px" }}>
+          <div style={{ maxWidth:1100, margin:"0 auto" }}>
+            <div style={{ textAlign:"center", marginBottom:64 }}>
+              <div style={{ display:"inline-block", fontSize:11, color:T.amber, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:16, background:T.amberLight, border:`1px solid ${T.amber}33`, borderRadius:20, padding:"5px 14px" }}>Your Journey</div>
+              <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 20px 0", lineHeight:1.18 }}>
+                How Second Innings Helps You
+              </h2>
+              <p style={{ fontSize:16, color:T.inkMid, lineHeight:1.85, maxWidth:580, margin:"0 auto" }}>
+                Three clear steps from feeling stuck to living with purpose — in the next phase of your life.
+              </p>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:32, position:"relative" }}>
+              <div style={{ position:"absolute", top:68, left:"17%", right:"17%", height:2, background:`linear-gradient(90deg, ${T.accent}55, ${T.amber}55, ${T.accent}55)`, zIndex:0 }} />
+              {[
+                { step:"01", icon:"🔍", title:"Discover", subtitle:"Find What's Possible", desc:"Complete a 6-step personalised assessment revealing opportunities matched to your profession, life stage, values, and what truly matters to you.", highlight:T.accent, light:T.accentLight },
+                { step:"02", icon:"📋", title:"Plan", subtitle:"Build Your Roadmap", desc:"Use our financial calculator, career roadmap, and location finder to create a concrete, data-driven plan — not just a vision board or a wish list.", highlight:T.amber, light:T.amberLight },
+                { step:"03", icon:"🚀", title:"Start", subtitle:"Take the First Step", desc:"Your AI life coach guides you daily. Track readiness, celebrate progress, connect with experts, and launch your second innings with confidence.", highlight:T.accent, light:T.accentLight },
+              ].map((s, i) => (
+                <div key={i} style={{ position:"relative", zIndex:1, background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:22, padding:"40px 32px", textAlign:"center", boxShadow:T.shadow }}>
+                  <div style={{ width:56, height:56, borderRadius:"50%", background:s.light, border:`2px solid ${s.highlight}`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px auto", fontSize:12, fontWeight:700, color:s.highlight, letterSpacing:"0.1em" }}>{s.step}</div>
+                  <div style={{ fontSize:36, marginBottom:14 }}>{s.icon}</div>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:26, color:T.ink, marginBottom:6 }}>{s.title}</div>
+                  <div style={{ fontSize:11, color:s.highlight, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:16 }}>{s.subtitle}</div>
+                  <div style={{ fontSize:13, color:T.inkMid, lineHeight:1.8 }}>{s.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign:"center", marginTop:52 }}>
+              <button onClick={()=>setStarted(true)} style={{ background:"transparent", border:`2px solid ${T.accent}`, borderRadius:10, padding:"14px 40px", color:T.accent, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", transition:"all 0.2s" }}
+                onMouseEnter={e=>{ e.currentTarget.style.background=T.accent; e.currentTarget.style.color=T.dark?"#111":"#fff"; }}
+                onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.color=T.accent; }}>
+                Begin Your Journey →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── SECTION 3: WHY IT MATTERS ─────────────────────────────────────── */}
+        <div id="why" style={{ background:T.bgCard, padding:"90px 60px" }}>
+          <div style={{ maxWidth:1100, margin:"0 auto" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:80, alignItems:"center" }}>
+              <div>
+                <div style={{ display:"inline-block", fontSize:11, color:T.accent, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:16, background:T.accentLight, border:`1px solid ${T.accent}33`, borderRadius:20, padding:"5px 14px" }}>Why It Matters</div>
+                <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 24px 0", lineHeight:1.18 }}>
+                  Life doesn't stop<br/>at <span style={{ color:T.accent }}>one chapter.</span>
+                </h2>
+                <p style={{ fontSize:15, color:T.inkMid, lineHeight:1.85, marginBottom:20 }}>
+                  Most people spend decades building a career — and then have no plan for what comes next. Second Innings exists because the second half of life can be the most fulfilling, if you design it intentionally.
+                </p>
+                <p style={{ fontSize:15, color:T.inkMid, lineHeight:1.85, marginBottom:40 }}>
+                  Whether you're 40 or 60, burnt out or simply ready for more — you deserve a platform that takes your next chapter as seriously as your first.
+                </p>
+                <div style={{ display:"flex", gap:36, flexWrap:"wrap" }}>
+                  {[["50M+","Mid-career professionals in India alone"],["8–12 yrs","Average remaining career runway"],["73%","Report wanting a major life change"]].map(([stat,label],i)=>(
+                    <div key={i}>
+                      <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:30, color:T.accent, lineHeight:1 }}>{stat}</div>
+                      <div style={{ fontSize:11, color:T.inkMid, marginTop:8, lineHeight:1.5, maxWidth:100 }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop:40 }}>
+                  <button onClick={()=>setStarted(true)} style={{ background:T.accent, border:"none", borderRadius:10, padding:"14px 36px", color:T.dark?"#111":"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", boxShadow:`0 4px 20px ${T.accent}33` }}>
+                    Start My Journey →
+                  </button>
                 </div>
               </div>
-            ))}
-            <div style={{ textAlign:"center",fontSize:11,color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",textTransform:"uppercase",marginTop:4 }}>+ 5 more tools inside</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+                {[
+                  { icon:"💼", quote:"I had 20 years of experience but no idea what to do next. Second Innings helped me see a path I never considered.", name:"Rajesh M., 52", role:"Former IT Director → Sustainable Farming", color:T.accentLight, border:T.accent },
+                  { icon:"🎨", quote:"The financial calculator alone saved me 3 years of anxiety. I finally knew exactly when I could leave.", name:"Priya K., 47", role:"Senior Manager → Art & Wellness Coach", color:T.amberLight, border:T.amber },
+                  { icon:"🌿", quote:"Moving to Mysuru was the best decision of our lives. Second Innings showed us what was truly possible.", name:"Suresh & Anita R., 55", role:"Corporate Couple → Location-Independent Life", color:T.accentLight, border:T.accent },
+                ].map((t,i)=>(
+                  <div key={i} style={{ background:t.color, border:`1px solid ${t.border}44`, borderRadius:16, padding:"22px 26px" }}>
+                    <div style={{ fontSize:28, marginBottom:12 }}>{t.icon}</div>
+                    <div style={{ fontSize:14, color:T.ink, lineHeight:1.75, fontStyle:"italic", marginBottom:14 }}>"{t.quote}"</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>{t.name}</div>
+                    <div style={{ fontSize:12, color:T.inkMid, marginTop:3 }}>{t.role}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* ── SECTION 4: MONETIZATION — HOW WE SUSTAIN THIS ─────────────────── */}
+        <div id="pricing" style={{ background:T.bg, padding:"90px 60px" }}>
+          <div style={{ maxWidth:1100, margin:"0 auto" }}>
+            <div style={{ textAlign:"center", marginBottom:64 }}>
+              <div style={{ display:"inline-block", fontSize:11, color:T.amber, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:16, background:T.amberLight, border:`1px solid ${T.amber}33`, borderRadius:20, padding:"5px 14px" }}>Go Deeper</div>
+              <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 20px 0", lineHeight:1.18 }}>
+                Choose Your Path
+              </h2>
+              <p style={{ fontSize:16, color:T.inkMid, lineHeight:1.85, maxWidth:600, margin:"0 auto" }}>
+                Start completely free. Unlock expert guidance and premium tools when you're ready to move from planning into action.
+              </p>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:28 }}>
+              {[
+                {
+                  tier:"Free",
+                  icon:"🌱",
+                  price:"₹0",
+                  period:"Always free",
+                  color:T.accent,
+                  features:["Full onboarding assessment","Financial Runway Calculator","Career Roadmap builder","Location Finder (3 cities)","Stress & Readiness Tracker","AI Coach (10 messages/day)"],
+                  cta:"Get Started Free",
+                  primary:false,
+                },
+                {
+                  tier:"Premium",
+                  icon:"🚀",
+                  price:"₹499",
+                  period:"per month",
+                  color:T.amber,
+                  badge:"Most Popular",
+                  features:["Everything in Free","Unlimited AI Coach sessions","Unlimited city comparisons","Personalised transition report PDF","Weekly readiness check-ins","Expert referrals: financial advisors","Priority support & community access"],
+                  cta:"Start 7-Day Free Trial",
+                  primary:true,
+                },
+                {
+                  tier:"Annual",
+                  icon:"⭐",
+                  price:"₹3,999",
+                  period:"per year · Save 33%",
+                  color:T.accent,
+                  badge:"Best Value",
+                  features:["Everything in Monthly Premium","2 months free vs monthly","Annual Transition Milestones Report","Early access to new features","Personalised plan PDF export","Priority community access","Lifetime download of all reports"],
+                  cta:"Start Annual Plan",
+                  primary:false,
+                },
+              ].map((plan, i) => (
+                <div key={i} style={{ background:T.bgCard, border:`2px solid ${plan.primary ? plan.color : T.border}`, borderRadius:22, padding:"40px 32px", position:"relative", boxShadow: plan.primary ? `0 8px 40px ${plan.color}33` : T.shadow }}>
+                  {plan.badge && <div style={{ position:"absolute", top:-14, left:"50%", transform:"translateX(-50%)", background:plan.color, color:T.dark?"#111":"#fff", fontSize:11, fontWeight:700, padding:"5px 18px", borderRadius:20, letterSpacing:"0.1em", whiteSpace:"nowrap" }}>{plan.badge}</div>}
+                  <div style={{ width:52, height:52, borderRadius:14, background:plan.color+"18", border:`1px solid ${plan.color}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, marginBottom:16 }}>{plan.icon}</div>
+                  <div style={{ fontSize:11, color:plan.color, textTransform:"uppercase", letterSpacing:"0.15em", fontWeight:700, marginBottom:8 }}>{plan.tier}</div>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:38, color:T.ink, lineHeight:1 }}>{plan.price}</div>
+                  <div style={{ fontSize:12, color:T.inkMid, marginBottom:28, marginTop:4 }}>{plan.period}</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:11, marginBottom:32 }}>
+                    {plan.features.map((f,fi)=>(
+                      <div key={fi} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                        <span style={{ color:plan.color, fontSize:14, flexShrink:0, marginTop:1 }}>✓</span>
+                        <span style={{ fontSize:13, color:T.inkMid, lineHeight:1.5 }}>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={()=>{ if(plan.tier==="Free"){ setStarted(true); } else { setPayPlan(plan); setShowPayModal(true); } }} style={{ width:"100%", background: plan.primary ? plan.color : "transparent", border:`2px solid ${plan.color}`, borderRadius:10, padding:"14px 24px", color: plan.primary ? (T.dark?"#111":"#fff") : plan.color, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", transition:"all 0.2s" }}>
+                    {plan.cta}
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop:52, display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:22 }}>
+              {[
+                { icon:"🤝", title:"Partner Referrals", desc:"Connect with vetted financial advisors, career coaches, and relocation consultants through our trusted partner network. Earn commissions on every referral." },
+                { icon:"📚", title:"Curated Skill Courses", desc:"Access hand-picked upskilling courses for your chosen post-career path — from consulting to creative arts to agri-tourism and sustainable farming." },
+                { icon:"🏢", title:"Corporate Packages", desc:"For HR teams and companies supporting employee transitions. Help your people plan their next chapter with structure, dignity, and expert guidance." },
+              ].map((item,i)=>(
+                <div key={i} style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:16, padding:"28px 30px" }}>
+                  <div style={{ width:48, height:48, borderRadius:12, background:T.accentLight, border:`1px solid ${T.accent}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, marginBottom:16 }}>{item.icon}</div>
+                  <div style={{ fontSize:15, fontWeight:700, color:T.ink, marginBottom:10 }}>{item.title}</div>
+                  <div style={{ fontSize:13, color:T.inkMid, lineHeight:1.75 }}>{item.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── CTA SECTION ───────────────────────────────────────────────────── */}
+        <div style={{ background:"linear-gradient(135deg, #0D1F17 0%, #1C3A2E 50%, #3A6B4A 100%)", padding:"110px 60px", textAlign:"center", position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:-100, left:-100, width:500, height:500, borderRadius:"50%", border:"1px solid rgba(255,255,255,0.04)" }}/>
+          <div style={{ position:"absolute", bottom:-80, right:-80, width:400, height:400, borderRadius:"50%", background:"rgba(196,135,58,0.1)" }}/>
+          <div style={{ position:"relative", zIndex:1, maxWidth:680, margin:"0 auto" }}>
+            <div style={{ display:"inline-block", fontSize:11, color:"rgba(255,255,255,0.5)", textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:20, border:"1px solid rgba(255,255,255,0.15)", borderRadius:20, padding:"5px 16px" }}>Your Time is Now</div>
+            <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:50, color:"#fff", margin:"0 0 24px 0", lineHeight:1.14 }}>
+              Start Your Second<br/>Innings Today
+            </h2>
+            <p style={{ fontSize:16, color:"rgba(255,255,255,0.65)", lineHeight:1.9, maxWidth:520, margin:"0 auto 52px auto" }}>
+              Join thousands of mid-career professionals designing their next chapter — not leaving it to chance. Your best years may still be ahead of you.
+            </p>
+            <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", marginBottom:36 }}>
+              <button onClick={()=>setStarted(true)} style={{ background:"rgba(255,255,255,0.95)", border:"none", borderRadius:12, padding:"18px 52px", color:"#1C3A2E", fontSize:16, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", letterSpacing:"0.02em", boxShadow:"0 8px 40px rgba(0,0,0,0.35)", transition:"all 0.2s" }}>
+                Explore Opportunities →
+              </button>
+              <button onClick={()=>setStarted(true)} style={{ background:"transparent", border:"2px solid rgba(255,255,255,0.3)", borderRadius:12, padding:"18px 52px", color:"rgba(255,255,255,0.85)", fontSize:16, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", letterSpacing:"0.02em", transition:"all 0.2s" }}>
+                Start Planning Free
+              </button>
+            </div>
+            <div style={{ display:"flex", gap:28, justifyContent:"center", flexWrap:"wrap" }}>
+              {["✓ Free to start","✓ No account needed","✓ Your data stays private","✓ First insight in 5 minutes"].map((t,i)=>(
+                <div key={i} style={{ fontSize:13, color:"rgba(255,255,255,0.45)", fontWeight:600 }}>{t}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── FOOTER ────────────────────────────────────────────────────────── */}
+        <div style={{ background:T.bgCard, borderTop:`1px solid ${T.border}`, padding:"32px 60px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:20 }}>
+          <div>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ width:26, height:26, borderRadius:6, background:T.accent, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>🌿</div>
+              <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink }}>SecondInnings</div>
+            </div>
+            <div style={{ fontSize:12, color:T.inkLight, marginTop:5 }}>Life Design Portal · secondinnings.in</div>
+          </div>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            {["Dashboard","Location Finder","Career Roadmap","Financial Runway","AI Coach","Decision Tool"].map(link=>(
+              <button key={link} onClick={()=>setStarted(true)} style={{ background:"none", border:`1px solid ${T.border}`, borderRadius:8, color:T.inkMid, fontSize:12, cursor:"pointer", fontFamily:"'Lato',sans-serif", padding:"6px 14px", transition:"all 0.15s" }}
+                onMouseEnter={e=>{ e.currentTarget.style.borderColor=T.accent; e.currentTarget.style.color=T.accent; }}
+                onMouseLeave={e=>{ e.currentTarget.style.borderColor=T.border; e.currentTarget.style.color=T.inkMid; }}>
+                {link}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize:12, color:T.inkLight }}>© 2025 SecondInnings · Designed with care</div>
+        </div>
+
+        {/* ── Payment Modal ── */}
+        {showPayModal && payPlan && (
+          <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.6)", backdropFilter:"blur(6px)" }} onClick={()=>setShowPayModal(false)}>
+            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:24, padding:40, maxWidth:500, width:"90%", boxShadow:"0 24px 64px rgba(0,0,0,0.4)" }} onClick={e=>e.stopPropagation()}>
+              <div style={{ textAlign:"center", marginBottom:24 }}>
+                <div style={{ fontSize:40, marginBottom:10 }}>💳</div>
+                <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:26, color:T.ink, marginBottom:6 }}>{payPlan.tier} Plan</div>
+                <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:34, color:payPlan.color }}>{payPlan.price}</div>
+                <div style={{ fontSize:13, color:T.inkMid, marginTop:4 }}>{payPlan.period}</div>
+              </div>
+              <div style={{ background:T.bgMuted, borderRadius:14, padding:20, marginBottom:16 }}>
+                <div style={{ fontWeight:700, color:T.ink, marginBottom:12, fontSize:14 }}>Pay via UPI or Bank Transfer</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:10, padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
+                    <span style={{ fontSize:22, flexShrink:0 }}>📱</span>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>UPI Payment</div>
+                      <div style={{ fontSize:12, color:T.inkMid, marginTop:2 }}>UPI ID: <strong style={{color:T.accent, userSelect:"all"}}>secondinnings@upi</strong></div>
+                      <div style={{ fontSize:11, color:T.inkLight, marginTop:2 }}>GPay · PhonePe · Paytm · BHIM — any UPI app works</div>
+                    </div>
+                  </div>
+                  <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:10, padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
+                    <span style={{ fontSize:22, flexShrink:0 }}>💳</span>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>Debit / Credit Card</div>
+                      <div style={{ fontSize:12, color:T.inkMid, marginTop:2 }}>Razorpay secure checkout — Visa, Mastercard, RuPay</div>
+                      <div style={{ fontSize:11, color:T.inkLight, marginTop:2 }}>Card checkout coming soon · UPI available now</div>
+                    </div>
+                  </div>
+                  <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:10, padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
+                    <span style={{ fontSize:22, flexShrink:0 }}>✉️</span>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>Net Banking / NEFT</div>
+                      <div style={{ fontSize:12, color:T.inkMid, marginTop:2 }}>Email <strong style={{color:T.accent}}>pay@secondinnings.in</strong> for bank details</div>
+                      <div style={{ fontSize:11, color:T.inkLight, marginTop:2 }}>Details sent within 24 hours</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style={{ background:T.amberLight, border:`1px solid ${T.amber}44`, borderRadius:10, padding:"11px 16px", marginBottom:20, fontSize:12, color:T.inkMid, lineHeight:1.6 }}>
+                <strong style={{color:T.amber}}>How to activate: </strong>After paying, email your transaction ID to <strong style={{color:T.ink}}>pay@secondinnings.in</strong> — your plan will be activated within 24 hours.
+              </div>
+              <div style={{ display:"flex", gap:12 }}>
+                <button onClick={()=>setShowPayModal(false)} style={{ flex:1, background:"transparent", border:`1.5px solid ${T.border}`, borderRadius:10, padding:"12px 20px", color:T.inkMid, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>
+                  Cancel
+                </button>
+                <button onClick={()=>{ setShowPayModal(false); setStarted(true); }} style={{ flex:2, background:payPlan.color, border:"none", borderRadius:10, padding:"12px 20px", color:T.dark?"#111":"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>
+                  Continue to App →
+                </button>
+              </div>
+              <div style={{ textAlign:"center", marginTop:14, fontSize:11, color:T.inkLight }}>🔒 Secure · No card data stored on this site · Cancel anytime</div>
+            </div>
+          </div>
+        )}
+
       </div>
     );
   }
@@ -908,7 +1254,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
   const phaseColors = [T.accent, T.amber, T.inkMid, T.ink];
 
   return (
-    <div style={{ minHeight:"100vh", background:T.bg, fontFamily:"'Lato',sans-serif", color:T.ink }}>
+    <div style={{ height:"100vh", background:T.bg, fontFamily:"'Lato',sans-serif", color:T.ink, display:"flex", flexDirection:"column", overflow:"hidden" }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
       <style>{`*{box-sizing:border-box} input[type=range]{accent-color:${T.accent}} @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}} .fade{animation:fadeUp 0.35s ease forwards} @keyframes dot{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}} @media(max-width:900px){.g4{grid-template-columns:1fr 1fr!important}.g3{grid-template-columns:1fr 1fr!important}.g2-fin{grid-template-columns:1fr!important}.hdr-info{display:none!important}.hdr-actions{gap:8px!important}} @media(max-width:600px){.g4{grid-template-columns:1fr!important}.g3{grid-template-columns:1fr!important}.g2{grid-template-columns:1fr!important}.mob-stack{flex-direction:column!important}.mob-pad{padding:16px 14px!important}.landing-right{display:none!important}.landing-left{flex:unset!important;width:100%!important;padding:40px 24px!important}.landing-h1{font-size:34px!important}.tab-bar{gap:2px!important}.tab-bar button{padding:6px 10px!important;font-size:11px!important}}`}</style>
 
@@ -945,6 +1291,9 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
           </div>
         </div>
       </div>
+
+      {/* Scrollable content wrapper */}
+      <div style={{ flex:1, overflowY:"auto" }} id="main-body">
 
       {/* ── AI Disclaimer Banner ── */}
       <div style={{ background:T.amberLight, borderTop:`1px solid ${T.border}`, borderBottom:`1px solid ${T.amber}33`, padding:"9px 28px" }}>
@@ -1716,6 +2065,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
 
         </div>
       </footer>
+      </div>{/* end scrollable wrapper */}
 
       {/* ── Reset Confirmation Modal ── */}
       {showResetConfirm && (
