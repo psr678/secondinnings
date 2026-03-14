@@ -476,8 +476,9 @@ function Radar({ data, labels, color, border }) {
   const grids = [0.33,0.66,1].map(s=>labels.map((_,i)=>{ const a=(Math.PI*2*i)/n-Math.PI/2; return { x:cx+r*s*Math.cos(a), y:cy+r*s*Math.sin(a) }; }));
   const axes = labels.map((_,i)=>{ const a=(Math.PI*2*i)/n-Math.PI/2; return { x:cx+r*Math.cos(a), y:cy+r*Math.sin(a) }; });
   const lbls = labels.map((l,i)=>{ const a=(Math.PI*2*i)/n-Math.PI/2; return { l, x:cx+(r+20)*Math.cos(a), y:cy+(r+20)*Math.sin(a) }; });
+  const ariaLabel = labels.map((l,i) => `${l}: ${data[i]}/10`).join(", ");
   return (
-    <svg width="200" height="200" viewBox="0 0 200 200">
+    <svg width="200" height="200" viewBox="0 0 200 200" role="img" aria-label={`Radar chart — ${ariaLabel}`}>
       {grids.map((ring,ri)=><polygon key={ri} points={ring.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke={border} strokeWidth="1"/>)}
       {axes.map((a,i)=><line key={i} x1={cx} y1={cy} x2={a.x} y2={a.y} stroke={border} strokeWidth="1"/>)}
       <polygon points={poly} fill={color+"28"} stroke={color} strokeWidth="2"/>
@@ -493,7 +494,7 @@ function CircleScore({ value, max=10, color, bg, size=80, label }) {
   const filled=circumference*(value/max);
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-      <svg width={size} height={size} viewBox="0 0 80 80">
+      <svg width={size} height={size} viewBox="0 0 80 80" role="img" aria-label={`${label||"Score"}: ${value} out of ${max}`}>
         <circle cx={cx} cy={cy} r={r} fill="none" stroke={bg} strokeWidth="8"/>
         <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="8"
           strokeDasharray={`${filled} ${circumference-filled}`}
@@ -510,22 +511,27 @@ function CircleScore({ value, max=10, color, bg, size=80, label }) {
 
 // ── Theme Switcher Panel ──────────────────────────────────────────────────────
 function ThemePanel({ current, onSelect, onClose, T }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", alignItems:"flex-start", justifyContent:"flex-end" }}>
-      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }} />
+    <div role="dialog" aria-modal="true" aria-label="Choose theme" style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", alignItems:"flex-start", justifyContent:"flex-end" }}>
+      <button onClick={onClose} aria-label="Close theme panel" style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)", border:"none", cursor:"pointer", width:"100%", height:"100%" }} />
       <div style={{ position:"relative", width:400, height:"100vh", background:T.bgCard, borderLeft:`1px solid ${T.border}`, overflowY:"auto", padding:24, boxShadow:"-8px 0 32px rgba(0,0,0,0.3)" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
           <div>
             <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink }}>Choose Theme</div>
             <div style={{ fontSize:12, color:T.inkLight, marginTop:3 }}>Changes apply instantly</div>
           </div>
-          <button onClick={onClose} style={{ background:"transparent", border:`1px solid ${T.border}`, borderRadius:8, padding:"6px 12px", color:T.inkMid, cursor:"pointer", fontSize:13 }}>✕ Close</button>
+          <button onClick={onClose} aria-label="Close theme panel" style={{ background:"transparent", border:`1px solid ${T.border}`, borderRadius:8, padding:"6px 12px", color:T.inkMid, cursor:"pointer", fontSize:13 }}>✕ Close</button>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           {Object.entries(THEMES).map(([id, theme]) => {
             const active = current === id;
             return (
-              <div key={id} onClick={() => onSelect(id)} style={{ cursor:"pointer", borderRadius:12, border:`2px solid ${active ? theme.accent : T.border}`, overflow:"hidden", transition:"all 0.2s", boxShadow: active ? `0 0 0 2px ${theme.accent}44` : "none" }}>
+              <button key={id} onClick={() => onSelect(id)} aria-pressed={active} style={{ cursor:"pointer", borderRadius:12, border:`2px solid ${active ? theme.accent : T.border}`, overflow:"hidden", transition:"all 0.2s", boxShadow: active ? `0 0 0 2px ${theme.accent}44` : "none", background:"transparent", textAlign:"left", padding:0 }}>
                 {/* Mini preview */}
                 <div style={{ background:theme.bg, padding:"10px 14px" }}>
                   <div style={{ display:"flex", gap:6, marginBottom:8 }}>
@@ -550,7 +556,7 @@ function ThemePanel({ current, onSelect, onClose, T }) {
                   </div>
                   {active && <div style={{ background:theme.accent, color:theme.dark ? "#000" : "#fff", fontSize:10, fontWeight:700, padding:"3px 10px", borderRadius:20, letterSpacing:"0.08em" }}>ACTIVE</div>}
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -566,8 +572,8 @@ function ThemePanel({ current, onSelect, onClose, T }) {
 function FieldError({ msg, T }) {
   if (!msg) return null;
   return (
-    <div style={{ marginTop:6, padding:"8px 12px", background:T.redLight, border:`1px solid ${T.red}44`, borderRadius:7, fontSize:12, color:T.red, display:"flex", alignItems:"center", gap:6 }}>
-      ⚠ {msg}
+    <div role="alert" style={{ marginTop:6, padding:"8px 12px", background:T.redLight, border:`1px solid ${T.red}44`, borderRadius:7, fontSize:12, color:T.red, display:"flex", alignItems:"center", gap:6 }}>
+      <span aria-hidden="true">⚠</span> {msg}
     </div>
   );
 }
@@ -589,13 +595,20 @@ function Onboarding({ onComplete, T }) {
   const [touched, setTouched] = useState({});
   const [triedNext, setTriedNext] = useState(false);
   const [selectedN, setSelectedN] = useState(null);
+  const [landingScrolled, setLandingScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setLandingScrolled(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const toggle = (field, val) => setForm(f=>({ ...f, [field]: f[field].includes(val) ? f[field].filter(x=>x!==val) : [...f[field], val] }));
   const yearsToTransition = form.transitionAge && form.age ? parseInt(form.transitionAge)-parseInt(form.age) : null;
 
   const chip = (active, color=T.accent) => ({ background: active ? color+"22" : T.bgMuted, border:`1.5px solid ${active ? color : T.border}`, borderRadius:20, padding:"7px 15px", fontSize:12, color: active ? color : T.inkMid, cursor:"pointer", fontWeight: active ? 700 : 400, transition:"all 0.15s", fontFamily:"'Lato',sans-serif" });
   const btn = (variant="primary") => ({ background: variant==="primary" ? T.accent : variant==="amber" ? T.amber : "transparent", border:`1.5px solid ${variant==="primary" ? T.accent : variant==="amber" ? T.amber : T.border}`, borderRadius:8, padding:"10px 24px", color: variant==="ghost" ? T.inkMid : T.dark ? "#111" : "#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", transition:"all 0.18s" });
-  const inputStyle = (fieldErr) => ({ background:T.bgMuted, border:`1.5px solid ${fieldErr ? T.red : T.border}`, borderRadius:8, padding:"10px 14px", color:T.ink, fontSize:14, width:"100%", fontFamily:"'Lato',sans-serif", outline:"none", boxSizing:"border-box" });
+  const inputStyle = (fieldErr) => ({ background:T.bgMuted, border:`1.5px solid ${fieldErr ? T.red : T.border}`, borderRadius:8, padding:"10px 14px", color:T.ink, fontSize:14, width:"100%", fontFamily:"'Lato',sans-serif", boxSizing:"border-box" });
 
   const errs = validateStep(step, form);
   const canProceed = Object.keys(errs).length === 0;
@@ -1025,6 +1038,15 @@ function Onboarding({ onComplete, T }) {
         </div>
 
         {/* ── Payment Modal ── */}
+        {/* ── Scroll-to-top (landing) ── */}
+        {landingScrolled && (
+          <button
+            onClick={() => window.scrollTo({ top:0, behavior:"smooth" })}
+            aria-label="Scroll to top"
+            style={{ position:"fixed", bottom:28, right:28, zIndex:500, width:44, height:44, borderRadius:"50%", background:T.accent, border:"none", color:T.dark?"#111":"#fff", fontSize:20, cursor:"pointer", boxShadow:`0 4px 16px ${T.accent}55`, display:"flex", alignItems:"center", justifyContent:"center" }}
+          >↑</button>
+        )}
+
         {showPayModal && payPlan && (
           <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.6)", backdropFilter:"blur(6px)" }} onClick={()=>setShowPayModal(false)}>
             <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:24, padding:40, maxWidth:500, width:"90%", boxShadow:"0 24px 64px rgba(0,0,0,0.4)" }} onClick={e=>e.stopPropagation()}>
@@ -1356,11 +1378,16 @@ function SubscriptionModal({ user, onClose, googleBtnRef, T }) {
       cta:"Join Waitlist", ctaDisabled:false, waitlist:true,
     },
   ];
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center" }}>
-      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(2px)" }}/>
+    <div role="dialog" aria-modal="true" aria-label="Choose your plan" style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <button onClick={onClose} aria-label="Close plan modal" style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(2px)", border:"none", cursor:"pointer", width:"100%", height:"100%" }}/>
       <div style={{ position:"relative", width:"min(860px,95vw)", background:T.bgCard, borderRadius:20, border:`1px solid ${T.border}`, boxShadow:"0 24px 80px rgba(0,0,0,0.4)", padding:"36px 32px", maxHeight:"90vh", overflowY:"auto" }}>
-        <button onClick={onClose} style={{ position:"absolute", top:16, right:18, background:"transparent", border:`1px solid ${T.border}`, borderRadius:8, padding:"5px 12px", color:T.inkMid, cursor:"pointer", fontSize:13 }}>✕</button>
+        <button onClick={onClose} aria-label="Close plan modal" style={{ position:"absolute", top:16, right:18, background:"transparent", border:`1px solid ${T.border}`, borderRadius:8, padding:"5px 12px", color:T.inkMid, cursor:"pointer", fontSize:13 }}>✕</button>
         <div style={{ textAlign:"center", marginBottom:32 }}>
           <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:26, color:T.ink, marginBottom:6 }}>Choose your plan</div>
           <div style={{ fontSize:13, color:T.inkMid }}>Start free. Upgrade when you're ready to go deeper.</div>
@@ -1429,8 +1456,10 @@ export default function App() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [user, setUser] = useState(null);
   const [showSubModal, setShowSubModal] = useState(false);
+  const [scrollVisible, setScrollVisible] = useState(false);
   const chatRef = useRef(null);
   const googleBtnRef = useRef(null);
+  const mainBodyRef = useRef(null);
 
   const T = THEMES[themeId];
 
@@ -1489,6 +1518,21 @@ export default function App() {
     } catch {}
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Document title update on tab change ───────────────────────────────────
+  useEffect(() => {
+    const tabLabel = TABS.find(t => t.id === tab)?.label || "Overview";
+    document.title = `${tabLabel} — SecondInnigs`;
+  }, [tab]);
+
+  // ── Scroll-to-top button visibility ───────────────────────────────────────
+  useEffect(() => {
+    const el = mainBodyRef.current;
+    if (!el) return;
+    const onScroll = () => setScrollVisible(el.scrollTop > 300);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
   const latestReadiness = readinessLog[readinessLog.length - 1] || { financial:0, direction:0, energy:0, family:0, progress:0 };
   const overallReadiness = ((latestReadiness.financial + latestReadiness.direction + latestReadiness.energy + latestReadiness.family + latestReadiness.progress) / 5).toFixed(1);
 
@@ -1497,7 +1541,7 @@ export default function App() {
   const cardSm = { background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:12, padding:16, boxShadow:T.shadow };
   const sTitle = { fontFamily:"'DM Serif Display',serif", fontSize:22, color:T.ink, fontWeight:400, margin:0 };
   const sLabel = { fontSize:11, color:T.inkLight, letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:700 };
-  const sInput = { background:T.bgMuted, border:`1.5px solid ${T.border}`, borderRadius:8, padding:"10px 14px", color:T.ink, fontSize:14, width:"100%", fontFamily:"'Lato',sans-serif", outline:"none", boxSizing:"border-box" };
+  const sInput = { background:T.bgMuted, border:`1.5px solid ${T.border}`, borderRadius:8, padding:"10px 14px", color:T.ink, fontSize:14, width:"100%", fontFamily:"'Lato',sans-serif", boxSizing:"border-box" };
   const sBtn = (v="primary") => ({ background:v==="primary"?T.accent:v==="amber"?T.amber:"transparent", border:`1.5px solid ${v==="primary"?T.accent:v==="amber"?T.amber:T.border}`, borderRadius:8, padding:"10px 22px", color:v==="ghost"?T.inkMid:T.dark?"#111":"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", transition:"all 0.18s" });
   const sChip = (active, color=T.accent) => ({ background:active?color+"22":T.bgMuted, border:`1.5px solid ${active?color:T.border}`, borderRadius:20, padding:"6px 14px", fontSize:12, color:active?color:T.inkMid, cursor:"pointer", fontWeight:active?700:400, transition:"all 0.15s" });
   const sTag = (color=T.accent) => ({ background:color+"18", border:`1px solid ${color+"44"}`, borderRadius:20, padding:"3px 10px", fontSize:11, color, fontWeight:600 });
@@ -1702,7 +1746,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
   return (
     <div style={{ height:"100vh", background:T.bg, fontFamily:"'Lato',sans-serif", color:T.ink, display:"flex", flexDirection:"column", overflow:"hidden" }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
-      <style>{`*{box-sizing:border-box} input[type=range]{accent-color:${T.accent}} @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}} .fade{animation:fadeUp 0.35s ease forwards} @keyframes dot{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}} @media(max-width:900px){.g4{grid-template-columns:1fr 1fr!important}.g3{grid-template-columns:1fr 1fr!important}.g2-fin{grid-template-columns:1fr!important}.hdr-info{display:none!important}.hdr-actions{gap:8px!important}} @media(max-width:600px){.g4{grid-template-columns:1fr!important}.g3{grid-template-columns:1fr!important}.g2{grid-template-columns:1fr!important}.mob-stack{flex-direction:column!important}.mob-pad{padding:16px 14px!important}.landing-right{display:none!important}.landing-left{flex:unset!important;width:100%!important;padding:40px 24px!important}.landing-h1{font-size:34px!important}.tab-bar{gap:2px!important}.tab-bar button{padding:6px 10px!important;font-size:11px!important}}`}</style>
+      <style>{`.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0} *{box-sizing:border-box} input[type=range]{accent-color:${T.accent}} @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}} .fade{animation:fadeUp 0.35s ease forwards} @keyframes dot{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}} button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid ${T.accent}!important;outline-offset:2px!important} .si-input:focus{border-color:${T.accent}!important;box-shadow:0 0 0 3px ${T.accent}33!important} .tab-bar::-webkit-scrollbar{height:3px} .tab-bar::-webkit-scrollbar-thumb{background:${T.border};border-radius:2px} @media(max-width:900px){.g4{grid-template-columns:1fr 1fr!important}.g3{grid-template-columns:1fr 1fr!important}.g2-fin{grid-template-columns:1fr!important}.hdr-info{display:none!important}.hdr-actions{gap:8px!important}} @media(max-width:600px){.g4{grid-template-columns:1fr!important}.g3{grid-template-columns:1fr!important}.g2{grid-template-columns:1fr!important}.mob-stack{flex-direction:column!important}.mob-pad{padding:16px 14px!important}.landing-right{display:none!important}.landing-left{flex:unset!important;width:100%!important;padding:40px 24px!important}.landing-h1{font-size:34px!important}.tab-bar{gap:2px!important}.tab-bar button{padding:6px 10px!important;font-size:11px!important}}`}</style>
 
       {showThemes && <ThemePanel current={themeId} onSelect={id=>{setThemeId(id)}} onClose={()=>setShowThemes(false)} T={T}/>}
       {showSubModal && <SubscriptionModal user={user} onClose={()=>setShowSubModal(false)} googleBtnRef={googleBtnRef} T={T}/>}
@@ -1752,14 +1796,14 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
               <button style={{ ...sBtn("ghost"), fontSize:11, padding:"6px 12px" }} onClick={()=>setShowResetConfirm(true)}>↺ Re-do</button>
             </div>
           </div>
-          <div className="tab-bar" style={{ display:"flex", gap:4, paddingBottom:10, overflowX:"auto" }}>
-            {TABS.map(t=><button key={t.id} style={navBtn(tab===t.id)} onClick={()=>setTab(t.id)}><span style={{ marginRight:5 }}>{t.icon}</span>{t.label}</button>)}
+          <div className="tab-bar" role="tablist" aria-label="Portal sections" style={{ display:"flex", gap:4, paddingBottom:10, overflowX:"auto" }}>
+            {TABS.map(t=><button key={t.id} role="tab" aria-selected={tab===t.id} style={navBtn(tab===t.id)} onClick={()=>setTab(t.id)}><span aria-hidden="true" style={{ marginRight:5 }}>{t.icon}</span>{t.label}</button>)}
           </div>
         </div>
       </div>
 
       {/* Scrollable content wrapper */}
-      <div style={{ flex:1, overflowY:"auto" }} id="main-body">
+      <div ref={mainBodyRef} style={{ flex:1, overflowY:"auto" }} id="main-body">
 
       {/* ── AI Disclaimer Banner ── */}
       <div style={{ background:T.amberLight, borderTop:`1px solid ${T.border}`, borderBottom:`1px solid ${T.amber}33`, padding:"9px 28px" }}>
@@ -1930,6 +1974,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 style={{ ...sBtn(), display:"flex", alignItems:"center", gap:8, opacity:aiLocsLoading?0.6:1 }}
                 onClick={fetchAiLocations}
                 disabled={aiLocsLoading}
+                aria-disabled={aiLocsLoading}
               >
                 {aiLocsLoading
                   ? <><span style={{fontSize:16}}>⟳</span> Searching globally…</>
@@ -1942,8 +1987,8 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
 
             {/* Loading state */}
             {aiLocsLoading && (
-              <div style={{ ...card, textAlign:"center", padding:60 }}>
-                <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:20 }}>
+              <div role="status" aria-live="polite" style={{ ...card, textAlign:"center", padding:60 }}>
+                <div aria-hidden="true" style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:20 }}>
                   {[0,1,2].map(i=><div key={i} style={{ width:10, height:10, borderRadius:"50%", background:T.accent, animation:`dot 1.4s ${i*0.2}s infinite` }}/>)}
                 </div>
                 <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:18, color:T.ink, marginBottom:8 }}>Searching the world for you…</div>
@@ -1953,8 +1998,8 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
 
             {/* Error state */}
             {aiLocsError && !aiLocsLoading && (
-              <div style={{ ...card, background:T.redLight, border:`1px solid ${T.red}44`, textAlign:"center", padding:32 }}>
-                <div style={{ fontSize:18, marginBottom:8 }}>⚠</div>
+              <div role="alert" style={{ ...card, background:T.redLight, border:`1px solid ${T.red}44`, textAlign:"center", padding:32 }}>
+                <div aria-hidden="true" style={{ fontSize:18, marginBottom:8 }}>⚠</div>
                 <div style={{ color:T.red, fontSize:14 }}>{aiLocsError}</div>
               </div>
             )}
@@ -2373,7 +2418,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                     <span style={sTag(T.inkLight)}>{d.tag}</span>
                     <div style={{ display:"flex", gap:6 }}>
                       {["Yes","Maybe","No"].map(opt=>(
-                        <button key={opt} onClick={()=>setDecAnswers({...decAnswers,[i]:opt})} style={{ padding:"5px 14px", borderRadius:6, fontSize:12, cursor:"pointer", fontWeight:decAnswers[i]===opt?700:400, border:`1.5px solid ${decAnswers[i]===opt?(opt==="Yes"?T.accent:opt==="No"?T.red:T.amber):T.border}`, background:decAnswers[i]===opt?(opt==="Yes"?T.accentLight:opt==="No"?T.redLight:T.amberLight):"transparent", color:decAnswers[i]===opt?(opt==="Yes"?T.accent:opt==="No"?T.red:T.amber):T.inkLight, transition:"all 0.15s" }}>{opt}</button>
+                        <button key={opt} aria-pressed={decAnswers[i]===opt} onClick={()=>setDecAnswers({...decAnswers,[i]:opt})} style={{ padding:"5px 14px", borderRadius:6, fontSize:12, cursor:"pointer", fontWeight:decAnswers[i]===opt?700:400, border:`1.5px solid ${decAnswers[i]===opt?(opt==="Yes"?T.accent:opt==="No"?T.red:T.amber):T.border}`, background:decAnswers[i]===opt?(opt==="Yes"?T.accentLight:opt==="No"?T.redLight:T.amberLight):"transparent", color:decAnswers[i]===opt?(opt==="Yes"?T.accent:opt==="No"?T.red:T.amber):T.inkLight, transition:"all 0.15s" }}>{opt}</button>
                       ))}
                     </div>
                   </div>
@@ -2406,7 +2451,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
             <div style={{ ...card, display:"flex", flexDirection:"column", height:580 }}>
 
               {/* Messages */}
-              <div style={{ flex:1, overflowY:"auto", paddingBottom:12, paddingRight:4 }}>
+              <div role="log" aria-live="polite" aria-label="Chat conversation" style={{ flex:1, overflowY:"auto", paddingBottom:12, paddingRight:4 }}>
                 {chatMsgs.map((m,i)=>(
                   <div key={i} style={{ marginBottom:16, display:"flex", justifyContent:m.role==="user"?"flex-end":"flex-start" }}>
                     {m.role==="assistant" && (
@@ -2419,8 +2464,9 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 ))}
                 {chatLoading && (
                   <div style={{ display:"flex", gap:6, padding:"8px 12px", alignItems:"center" }}>
-                    <div style={{ width:32, height:32, borderRadius:"50%", background:T.accentLight, border:`1px solid ${T.accent}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, marginRight:10, flexShrink:0 }}>◑</div>
-                    {[0,1,2].map(i=><div key={i} style={{ width:7, height:7, borderRadius:"50%", background:T.accent, animation:`dot 1.4s ${i*0.2}s infinite` }}/>)}
+                    <div aria-hidden="true" style={{ width:32, height:32, borderRadius:"50%", background:T.accentLight, border:`1px solid ${T.accent}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, marginRight:10, flexShrink:0 }}>◑</div>
+                    {[0,1,2].map(i=><div aria-hidden="true" key={i} style={{ width:7, height:7, borderRadius:"50%", background:T.accent, animation:`dot 1.4s ${i*0.2}s infinite` }}/>)}
+                    <span className="sr-only" aria-live="assertive">AI is responding…</span>
                   </div>
                 )}
                 <div ref={chatRef}/>
@@ -2446,14 +2492,16 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
               <div style={{ height:1, background:T.border, margin:"12px 0" }}/>
               <div style={{ display:"flex", gap:10 }}>
                 <input
+                  aria-label="Message the AI coach"
                   value={chatIn}
                   onChange={e=>setChatIn(e.target.value)}
                   onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); sendChat(); }}}
                   placeholder="Share your thoughts or ask a question…"
                   style={{ ...sInput, flex:1 }}
                   disabled={chatLoading}
+                  aria-disabled={chatLoading}
                 />
-                <button style={{ ...sBtn(), opacity:chatLoading||!chatIn.trim()?0.5:1 }} onClick={sendChat} disabled={chatLoading||!chatIn.trim()}>Send</button>
+                <button style={{ ...sBtn(), opacity:chatLoading||!chatIn.trim()?0.5:1 }} onClick={sendChat} disabled={chatLoading||!chatIn.trim()} aria-disabled={chatLoading||!chatIn.trim()}>Send</button>
               </div>
             </div>
           </div>
@@ -2538,9 +2586,18 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
       </footer>
       </div>{/* end scrollable wrapper */}
 
+      {/* ── Scroll-to-top button ── */}
+      {scrollVisible && (
+        <button
+          onClick={() => mainBodyRef.current?.scrollTo({ top:0, behavior:"smooth" })}
+          aria-label="Scroll to top"
+          style={{ position:"fixed", bottom:28, right:28, zIndex:500, width:44, height:44, borderRadius:"50%", background:T.accent, border:"none", color:T.dark?"#111":"#fff", fontSize:20, cursor:"pointer", boxShadow:`0 4px 16px ${T.accent}55`, display:"flex", alignItems:"center", justifyContent:"center", transition:"opacity 0.2s" }}
+        >↑</button>
+      )}
+
       {/* ── Reset Confirmation Modal ── */}
       {showResetConfirm && (
-      <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)" }}>
+      <div role="alertdialog" aria-modal="true" aria-label="Confirm reset" onKeyDown={e=>{ if(e.key==="Escape") setShowResetConfirm(false); }} style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)" }}>
         <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:20, padding:40, maxWidth:440, width:"90%", boxShadow:"0 24px 64px rgba(0,0,0,0.4)", textAlign:"center" }}>
           <div style={{ fontSize:36, marginBottom:16 }}>⚠</div>
           <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:24, color:T.ink, marginBottom:12 }}>Start Over?</div>
