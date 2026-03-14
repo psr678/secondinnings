@@ -72,3 +72,94 @@ export function matchRegion(loc, filter, REGION_MAP) {
   const countries = REGION_MAP[filter] || [];
   return countries.some(c => r.includes(c));
 }
+
+/**
+ * Build the AI Coach system prompt from the user's full profile + live progress data.
+ * Extracted here so every field can be unit-tested independently of the React component.
+ *
+ * @param {object} profile         — the full profile object from onboarding
+ * @param {object} readinessLatest — { financial, direction, energy, family, progress }
+ * @param {string} overallReadiness
+ * @param {object} weakestDim      — { label }
+ * @param {object} liveData        — { fin, monthlySave, targetCorpus, progress, monthsLeft,
+ *                                     doneTasks, totalTasks, careerPct, topLoc, readinessLogLen }
+ */
+export function buildCoachSystemPrompt(profile, readinessLatest, overallReadiness, weakestDim, liveData) {
+  const { fin, monthlySave, targetCorpus, progress, monthsLeft,
+          doneTasks, totalTasks, careerPct, topLoc, readinessLogLen } = liveData;
+  const yearsAway = profile?.transitionAge && profile?.age
+    ? parseInt(profile.transitionAge) - parseInt(profile.age) : "?";
+  return `You are a calm, wise, and insightful life design coach specialising in career transitions and second innings planning.
+
+User profile:
+- Name: ${profile?.name || "not provided"}
+- Age: ${profile?.age}
+- Profession: ${profile?.profession}
+- Target transition age: ${profile?.transitionAge} (${yearsAway} years away)
+- Post-career path: ${profile?.postPath}
+- Stress drivers: ${profile?.stressDrivers?.join(", ")}
+- Top priorities: ${profile?.priorities?.join(", ")}
+- Climate preference: ${profile?.climate || "not specified"}
+- Monthly budget tier: ${profile?.budget || "not specified"}
+- Languages comfortable in: ${profile?.languages?.join(", ") || "not specified"}
+- Dependents: ${profile?.dependents || "not specified"}
+- Children's schooling: ${profile?.kidsSchooling || "not applicable"}
+- Children's ages: ${profile?.kidsAge || "not applicable"}
+- Ageing parents: ${profile?.agingParents || "not specified"}
+- Family notes: ${profile?.dependentNotes || "none"}
+- Latest readiness scores (1–10): Financial clarity: ${readinessLatest.financial}, Career direction: ${readinessLatest.direction}, Energy & wellbeing: ${readinessLatest.energy}, Family alignment: ${readinessLatest.family}, Weekly progress: ${readinessLatest.progress}. Overall readiness: ${overallReadiness}/10. Weakest dimension: ${weakestDim.label}.
+
+Live progress data:
+- Financial: ₹${(fin.savings/100000).toFixed(1)}L saved, target ₹${(targetCorpus/100000).toFixed(1)}L (${Math.round(progress)}% built), monthly savings ₹${(monthlySave/1000).toFixed(0)}k, ${monthsLeft>600?"rate needs adjustment":`${Math.ceil(monthsLeft/12)}y ${monthsLeft%12}m to goal`}
+- Career roadmap: ${doneTasks}/${totalTasks} tasks complete (${careerPct}%)
+- Top location match: ${topLoc ? `${topLoc.name}, ${topLoc.region} (score ${topLoc.overall}/10)` : "not searched yet"}
+- Readiness entries logged: ${readinessLogLen} week${readinessLogLen===1?"":"s"}
+
+Guidelines:
+- Ask ONE deep, thoughtful question at a time — never multiple questions
+- Be warm, direct, and analytically sharp
+- Avoid generic life-coach clichés
+- When relevant, acknowledge family constraints — e.g. if children are in board years, factor that into timing advice
+- If ageing parents are a factor, gently explore how they're being considered in the transition plan
+- Reference the user's specific profile details when relevant
+- Keep responses concise (3–5 sentences max unless elaboration is explicitly asked for)
+- Help them think clearly, not just feel better`;
+}
+
+/**
+ * Build the Decision Tool AI analysis prompt from the user's full profile + filter answers.
+ * Extracted here so every field can be unit-tested independently of the React component.
+ *
+ * @param {object} profile       — full profile object
+ * @param {string} decisionText  — the decision the user typed
+ * @param {string} filterSummary — formatted string of all 6 filter answers
+ * @param {number} progress      — financial progress % (0–100)
+ */
+export function buildDecisionPrompt(profile, decisionText, filterSummary, progress) {
+  const yearsAway = profile?.transitionAge && profile?.age
+    ? parseInt(profile.transitionAge) - parseInt(profile.age) : null;
+  return `Evaluate this decision for ${profile?.name || "a professional"}, a ${profile?.profession || "professional"} planning to transition to ${profile?.postPath || "their next chapter"}${yearsAway ? ` in ${yearsAway} years` : ""}.
+
+Decision: "${decisionText}"
+
+Full profile context:
+- Stress drivers they want to escape: ${profile?.stressDrivers?.join(", ") || "not specified"}
+- Top lifestyle priorities: ${profile?.priorities?.join(", ") || "not specified"}
+- Climate preference: ${profile?.climate || "not specified"}
+- Monthly budget tier: ${profile?.budget || "not specified"}
+- Languages comfortable in: ${profile?.languages?.join(", ") || "not specified"}
+- Family situation: ${profile?.dependents || "not specified"}${profile?.kidsSchooling ? ` · Schooling: ${profile.kidsSchooling}` : ""}${profile?.kidsAge ? ` · Ages: ${profile.kidsAge}` : ""}${profile?.agingParents && profile.agingParents !== "Not applicable" ? ` · Ageing parents: ${profile.agingParents}` : ""}
+- Family notes: ${profile?.dependentNotes || "none"}
+- Financial progress: ${Math.round(progress)}% of target corpus built
+
+Filter scores (Yes = passes, Maybe = partial, No = concern):
+${filterSummary}
+
+Provide:
+1. A clear recommendation (1 sentence): Proceed / Reconsider / Avoid — and why
+2. The strongest reason TO do it given their specific context (1 sentence)
+3. The biggest risk given their family or financial situation (1 sentence)
+4. One specific action to reduce the risk or validate before committing
+
+Be direct, personal, and grounded in their actual situation. No generic life-coach filler.`;
+}

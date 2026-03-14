@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { escapeHtml, calcFinancials, validateStep, matchRegion } from './utils.js';
+import { escapeHtml, calcFinancials, validateStep, matchRegion, buildCoachSystemPrompt, buildDecisionPrompt } from './utils.js';
 
 // ── escapeHtml ─────────────────────────────────────────────────────────────
 describe('escapeHtml', () => {
@@ -335,6 +335,126 @@ describe('escapeHtml — PDF export pen-tests (AI location data)', () => {
   it('safely handles a normal city name with no modification', () => {
     expect(escapeHtml('Mysuru')).toBe('Mysuru');
     expect(escapeHtml('Pondicherry')).toBe('Pondicherry');
+  });
+});
+
+// ── buildCoachSystemPrompt — profile field coverage ───────────────────────
+// Every field collected during onboarding MUST appear in the AI coach prompt.
+// If a field is added to onboarding but not to this function, the test fails.
+const fullProfile = {
+  name: 'Raju Kumar',
+  age: '47',
+  transitionAge: '55',
+  profession: 'IT / Technology',
+  postPath: 'Consulting / Advisory',
+  stressDrivers: ['Heavy workload', 'Job insecurity'],
+  priorities: ['Mental peace', 'Low cost of living'],
+  climate: 'Cool / Hill (5–15°C)',
+  budget: '₹40k–₹75k/month',
+  languages: ['English', 'Hindi'],
+  dependents: 'Married with kids',
+  kidsSchooling: 'In school (below 10th)',
+  kidsAge: '10 and 12',
+  agingParents: 'Yes — living with me',
+  dependentNotes: 'Wife also wants to move to a quieter city after kids finish school.',
+};
+
+const readinessLatest = { financial: 7, direction: 6, energy: 8, family: 5, progress: 7 };
+const weakestDim = { label: 'Family alignment' };
+const liveData = {
+  fin: { savings: 5000000 },
+  monthlySave: 85000,
+  targetCorpus: 15600000,
+  progress: 32,
+  monthsLeft: 124,
+  doneTasks: 3,
+  totalTasks: 8,
+  careerPct: 37,
+  topLoc: { name: 'Mysuru', region: 'India', overall: 8.4 },
+  readinessLogLen: 6,
+};
+
+describe('buildCoachSystemPrompt — profile field coverage', () => {
+  let prompt;
+  beforeEach(() => {
+    prompt = buildCoachSystemPrompt(fullProfile, readinessLatest, '6.6', weakestDim, liveData);
+  });
+
+  it('includes the user name', () => expect(prompt).toContain('Raju Kumar'));
+  it('includes age', () => expect(prompt).toContain('47'));
+  it('includes transitionAge', () => expect(prompt).toContain('55'));
+  it('includes years away', () => expect(prompt).toContain('8')); // 55 - 47
+  it('includes profession', () => expect(prompt).toContain('IT / Technology'));
+  it('includes postPath', () => expect(prompt).toContain('Consulting / Advisory'));
+  it('includes stressDrivers', () => {
+    expect(prompt).toContain('Heavy workload');
+    expect(prompt).toContain('Job insecurity');
+  });
+  it('includes priorities', () => {
+    expect(prompt).toContain('Mental peace');
+    expect(prompt).toContain('Low cost of living');
+  });
+  it('includes climate', () => expect(prompt).toContain('Cool / Hill (5–15°C)'));
+  it('includes budget', () => expect(prompt).toContain('₹40k–₹75k/month'));
+  it('includes languages', () => {
+    expect(prompt).toContain('English');
+    expect(prompt).toContain('Hindi');
+  });
+  it('includes dependents', () => expect(prompt).toContain('Married with kids'));
+  it('includes kidsSchooling', () => expect(prompt).toContain('In school (below 10th)'));
+  it('includes kidsAge', () => expect(prompt).toContain('10 and 12'));
+  it('includes agingParents', () => expect(prompt).toContain('Yes — living with me'));
+  it('includes dependentNotes', () => expect(prompt).toContain('Wife also wants to move'));
+  it('includes readiness scores', () => {
+    expect(prompt).toContain('7'); // financial
+    expect(prompt).toContain('Family alignment'); // weakest dim
+  });
+  it('includes financial live data', () => {
+    expect(prompt).toContain('50.0L'); // savings in lakhs
+    expect(prompt).toContain('32%');
+  });
+  it('includes career roadmap progress', () => expect(prompt).toContain('3/8'));
+  it('includes top location', () => expect(prompt).toContain('Mysuru'));
+});
+
+// ── buildDecisionPrompt — profile field coverage ──────────────────────────
+describe('buildDecisionPrompt — profile field coverage', () => {
+  let prompt;
+  const decisionText = 'Should I accept a job in Bangalore?';
+  const filterSummary = 'Reversibility: Yes\nFinancial impact: Maybe\nFamily alignment: No';
+
+  beforeEach(() => {
+    prompt = buildDecisionPrompt(fullProfile, decisionText, filterSummary, 32);
+  });
+
+  it('includes the user name', () => expect(prompt).toContain('Raju Kumar'));
+  it('includes profession', () => expect(prompt).toContain('IT / Technology'));
+  it('includes postPath', () => expect(prompt).toContain('Consulting / Advisory'));
+  it('includes years away', () => expect(prompt).toContain('8')); // 55 - 47
+  it('includes the decision text', () => expect(prompt).toContain('Should I accept a job in Bangalore?'));
+  it('includes stressDrivers', () => {
+    expect(prompt).toContain('Heavy workload');
+    expect(prompt).toContain('Job insecurity');
+  });
+  it('includes priorities', () => {
+    expect(prompt).toContain('Mental peace');
+    expect(prompt).toContain('Low cost of living');
+  });
+  it('includes climate', () => expect(prompt).toContain('Cool / Hill (5–15°C)'));
+  it('includes budget', () => expect(prompt).toContain('₹40k–₹75k/month'));
+  it('includes languages', () => {
+    expect(prompt).toContain('English');
+    expect(prompt).toContain('Hindi');
+  });
+  it('includes dependents', () => expect(prompt).toContain('Married with kids'));
+  it('includes kidsSchooling', () => expect(prompt).toContain('In school (below 10th)'));
+  it('includes kidsAge', () => expect(prompt).toContain('10 and 12'));
+  it('includes agingParents', () => expect(prompt).toContain('Yes — living with me'));
+  it('includes dependentNotes', () => expect(prompt).toContain('Wife also wants to move'));
+  it('includes financial progress', () => expect(prompt).toContain('32%'));
+  it('includes filter summary', () => {
+    expect(prompt).toContain('Reversibility: Yes');
+    expect(prompt).toContain('Family alignment: No');
   });
 });
 

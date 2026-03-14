@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { escapeHtml, calcFinancials, validateStep, matchRegion as matchRegionUtil } from "./utils.js";
+import { escapeHtml, calcFinancials, validateStep, matchRegion as matchRegionUtil, buildCoachSystemPrompt, buildDecisionPrompt } from "./utils.js";
 
 // ── AI API ─────────────────────────────────────────────────────────────────
 // Production: /api/ai (Vercel serverless proxy — key never in browser bundle).
@@ -29,6 +29,16 @@ async function askClaude(messages, systemPrompt, maxTokens = 1000) {
 
   if (proxyRes.status !== 404) {
     const data = await proxyRes.json();
+    if (proxyRes.status === 429) {
+      const err = new Error("RATE_LIMITED");
+      err.status = 429;
+      throw err;
+    }
+    if (proxyRes.status === 503) {
+      const err = new Error("SERVICE_UNAVAILABLE");
+      err.status = 503;
+      throw err;
+    }
     if (!proxyRes.ok || data.error) throw new Error(data.error || "Request failed");
     return data.content?.map((b) => b.text || "").join("") || "…";
   }
@@ -679,13 +689,20 @@ const PRIORITIES_LIST = [
 ];
 
 // ── Bar component ─────────────────────────────────────────────────────────────
-function Bar({ value, max = 10, color, bg, height = 6 }) {
+function Bar({ value, max = 10, color, bg, height = 6, label }) {
   return (
     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-      <div style={{ flex:1, height, background:bg, borderRadius:height/2, overflow:"hidden" }}>
+      <div
+        role="progressbar"
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={max}
+        aria-label={label || `Progress: ${value} of ${max}`}
+        style={{ flex:1, height, background:bg, borderRadius:height/2, overflow:"hidden" }}
+      >
         <div style={{ width:`${(value/max)*100}%`, height:"100%", background:color, borderRadius:height/2, transition:"width 0.6s" }} />
       </div>
-      <span style={{ fontSize:12, color, minWidth:24, textAlign:"right", fontWeight:700 }}>{value}</span>
+      <span aria-hidden="true" style={{ fontSize:12, color, minWidth:24, textAlign:"right", fontWeight:700 }}>{value}</span>
     </div>
   );
 }
@@ -1891,44 +1908,20 @@ ${sortedLocs.length>0?`<h2>Top Location Matches</h2><div class="g3">${sortedLocs
     const next = [...chatMsgs, { role:"user", content:userMsg }];
     setChatMsgs(next); setChatIn(""); setChatLoading(true);
     setTimeout(()=>chatRef.current?.scrollIntoView({ behavior:"smooth" }), 50);
-    const system = `You are a calm, wise, and insightful life design coach specialising in career transitions and second innings planning.
-
-User profile:
-- Name: ${profile?.name || "not provided"}
-- Age: ${profile?.age}
-- Profession: ${profile?.profession}
-- Target transition age: ${profile?.transitionAge} (${profile?.transitionAge && profile?.age ? parseInt(profile.transitionAge)-parseInt(profile.age) : "?"} years away)
-- Post-career path: ${profile?.postPath}
-- Stress drivers: ${profile?.stressDrivers?.join(", ")}
-- Top priorities: ${profile?.priorities?.join(", ")}
-- Languages comfortable in: ${profile?.languages?.join(", ") || "not specified"}
-- Dependents: ${profile?.dependents || "not specified"}
-- Children's schooling: ${profile?.kidsSchooling || "not applicable"}
-- Children's ages: ${profile?.kidsAge || "not applicable"}
-- Ageing parents: ${profile?.agingParents || "not specified"}
-- Family notes: ${profile?.dependentNotes || "none"}
-- Latest readiness scores (1–10): Financial clarity: ${latestReadiness.financial}, Career direction: ${latestReadiness.direction}, Energy & wellbeing: ${latestReadiness.energy}, Family alignment: ${latestReadiness.family}, Weekly progress: ${latestReadiness.progress}. Overall readiness: ${overallReadiness}/10. Weakest dimension: ${weakestDim.label}.
-
-Live progress data:
-- Financial: ₹${(fin.savings/100000).toFixed(1)}L saved, target ₹${(targetCorpus/100000).toFixed(1)}L (${Math.round(progress)}% built), monthly savings ₹${(monthlySave/1000).toFixed(0)}k, ${monthsLeft>600?"rate needs adjustment":`${Math.ceil(monthsLeft/12)}y ${monthsLeft%12}m to goal`}
-- Career roadmap: ${doneTasks}/${totalTasks} tasks complete (${careerPct}%)
-- Top location match: ${topLoc ? `${topLoc.name}, ${topLoc.region} (score ${topLoc.overall}/10)` : "not searched yet"}
-- Readiness entries logged: ${readinessLog.length} week${readinessLog.length===1?"":"s"}
-
-Guidelines:
-- Ask ONE deep, thoughtful question at a time — never multiple questions
-- Be warm, direct, and analytically sharp
-- Avoid generic life-coach clichés
-- When relevant, acknowledge family constraints — e.g. if children are in board years, factor that into timing advice
-- If ageing parents are a factor, gently explore how they're being considered in the transition plan
-- Reference the user's specific profile details when relevant
-- Keep responses concise (3–5 sentences max unless elaboration is explicitly asked for)
-- Help them think clearly, not just feel better`;
+    const system = buildCoachSystemPrompt(profile, latestReadiness, overallReadiness, weakestDim, {
+      fin, monthlySave, targetCorpus, progress, monthsLeft,
+      doneTasks, totalTasks, careerPct, topLoc, readinessLogLen: readinessLog.length,
+    });
     try {
       const reply = await askClaude(next.map(m=>({ role:m.role, content:m.content })), system);
       setChatMsgs(prev=>[...prev, { role:"assistant", content:reply }]);
     } catch(e) {
-      setChatMsgs(prev=>[...prev, { role:"assistant", content:"I had trouble connecting. Please check the API key in your .env file and try again." }]);
+      const msg = e.status === 429
+        ? "You've sent a lot of messages — please wait a minute before trying again."
+        : e.status === 503
+        ? "The AI coach is temporarily unavailable. Please try again shortly."
+        : "I had trouble connecting. Please check your internet connection and try again.";
+      setChatMsgs(prev=>[...prev, { role:"assistant", content:msg }]);
     }
     setChatLoading(false);
     setTimeout(()=>chatRef.current?.scrollIntoView({ behavior:"smooth" }), 50);
@@ -1941,33 +1934,18 @@ Guidelines:
     setDecAiAnalysis(null);
     const filterSummary = DECISION_FILTERS.map((f,i) => `${f.tag}: ${decAnswers[i] || "Not answered"}`).join("\n");
     const system = `You are a calm, strategic life design advisor helping mid-career professionals make high-stakes decisions before their career transition.`;
-    const yearsAway = profile?.transitionAge && profile?.age ? parseInt(profile.transitionAge)-parseInt(profile.age) : null;
-    const prompt = `Evaluate this decision for ${profile?.name || "a professional"}, a ${profile?.profession || "professional"} planning to transition to ${profile?.postPath || "their next chapter"}${yearsAway ? ` in ${yearsAway} years` : ""}.
-
-Decision: "${decInput.text}"
-
-Full profile context:
-- Stress drivers they want to escape: ${profile?.stressDrivers?.join(", ") || "not specified"}
-- Top lifestyle priorities: ${profile?.priorities?.join(", ") || "not specified"}
-- Family situation: ${profile?.dependents || "not specified"}${profile?.kidsSchooling ? ` · Children: ${profile.kidsSchooling}` : ""}${profile?.agingParents && profile.agingParents !== "Not applicable" ? ` · Ageing parents: ${profile.agingParents}` : ""}
-- Family notes: ${profile?.dependentNotes || "none"}
-- Financial progress: ${Math.round(progress)}% of target corpus built
-
-Filter scores (Yes = passes, Maybe = partial, No = concern):
-${filterSummary}
-
-Provide:
-1. A clear recommendation (1 sentence): Proceed / Reconsider / Avoid — and why
-2. The strongest reason TO do it given their specific context (1 sentence)
-3. The biggest risk given their family or financial situation (1 sentence)
-4. One specific action to reduce the risk or validate before committing
-
-Be direct, personal, and grounded in their actual situation. No generic life-coach filler.`;
+    const prompt = buildDecisionPrompt(profile, decInput.text, filterSummary, progress);
     try {
       const reply = await askClaude([{ role:"user", content:prompt }], system, 600);
       setDecAiAnalysis(reply);
     } catch(e) {
-      setDecAiAnalysis("Could not reach the AI. Please check your connection and try again.");
+      setDecAiAnalysis(
+        e.status === 429
+          ? "Too many requests — please wait a minute and try again."
+          : e.status === 503
+          ? "AI analysis is temporarily unavailable. Please try again shortly."
+          : "Could not reach the AI. Please check your connection and try again."
+      );
     }
     setDecAiLoading(false);
   };
@@ -2026,7 +2004,13 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
       const parsed = JSON.parse(cleaned);
       setAiLocs(parsed);
     } catch(e) {
-      setAiLocsError("Could not load recommendations. Check your API key or try again.");
+      setAiLocsError(
+        e.status === 429
+          ? "Too many requests — please wait a minute and try again."
+          : e.status === 503
+          ? "Location search is temporarily unavailable. Please try again shortly."
+          : "Could not load recommendations. Please check your connection and try again."
+      );
     }
     setAiLocsLoading(false);
   };
@@ -2106,13 +2090,13 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 <div style={sLabel}>Roadmap</div>
                 <div style={{ fontSize:13, color:T.accent, fontWeight:700 }}>{careerPct}% done</div>
               </div>
-              <div style={{ width:80, height:6, background:T.bgMuted, borderRadius:3, overflow:"hidden" }}>
-                <div style={{ width:`${careerPct}%`, height:"100%", background:T.accent, borderRadius:3, transition:"width 0.6s" }}/>
+              <div role="progressbar" aria-valuenow={careerPct} aria-valuemin={0} aria-valuemax={100} aria-label={`Career roadmap: ${careerPct}% complete`} style={{ width:80, height:6, background:T.bgMuted, borderRadius:3, overflow:"hidden" }}>
+                <div aria-hidden="true" style={{ width:`${careerPct}%`, height:"100%", background:T.accent, borderRadius:3, transition:"width 0.6s" }}/>
               </div>
               {/* Theme button */}
-              <button onClick={()=>setShowThemes(true)} style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:8, padding:"7px 14px", color:T.inkMid, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontFamily:"'Lato',sans-serif" }}>
-                <div style={{ width:10, height:10, borderRadius:"50%", background:T.accent }}/>
-                <div style={{ width:10, height:10, borderRadius:"50%", background:T.amber }}/>
+              <button onClick={()=>setShowThemes(true)} aria-label="Change colour theme" style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:8, padding:"7px 14px", color:T.inkMid, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontFamily:"'Lato',sans-serif" }}>
+                <div aria-hidden="true" style={{ width:10, height:10, borderRadius:"50%", background:T.accent }}/>
+                <div aria-hidden="true" style={{ width:10, height:10, borderRadius:"50%", background:T.amber }}/>
                 Theme
               </button>
               {/* User / login area */}
@@ -2255,6 +2239,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                     ["Budget",profile.budget||"—"],
                     ["Dependents",profile.dependents||"—"],
                     ["Languages",profile.languages?.length>0?profile.languages.slice(0,3).join(", "):"—"],
+                    ...(profile.kidsAge ? [["Children's ages", profile.kidsAge]] : []),
                   ].map(([k,v])=>(
                     <div key={k} style={{ background:T.bgMuted, borderRadius:8, padding:"10px 12px" }}>
                       <div style={sLabel}>{k}</div>
