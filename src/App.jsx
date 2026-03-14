@@ -579,19 +579,13 @@ function FieldError({ msg, T }) {
 }
 
 // ── Onboarding ────────────────────────────────────────────────────────────────
-function Onboarding({ onComplete, T }) {
-  const [started, setStarted] = useState(false);
+function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancelEdit }) {
+  const [started, setStarted] = useState(isEditing);
   const [step, setStep] = useState(0);
   const [showPayModal, setShowPayModal] = useState(false);
   const [payPlan, setPayPlan] = useState(null);
-  const [form, setForm] = useState({
-    name:"", age:"", transitionAge:"", profession:"",
-    stressDrivers:[], postPath:"",
-    climate:"", budget:"", priorities:[],
-    languages:[],
-    dependents:"", kidsAge:"", kidsSchooling:"",
-    agingParents:"", dependentNotes:""
-  });
+  const defaultForm = { name:"", age:"", transitionAge:"", profession:"", stressDrivers:[], postPath:"", climate:"", budget:"", priorities:[], languages:[], dependents:"", kidsAge:"", kidsSchooling:"", agingParents:"", dependentNotes:"" };
+  const [form, setForm] = useState(initialForm || defaultForm);
   const [touched, setTouched] = useState({});
   const [triedNext, setTriedNext] = useState(false);
   const [selectedN, setSelectedN] = useState(null);
@@ -1124,9 +1118,12 @@ function Onboarding({ onComplete, T }) {
 
   return (
     <div style={{ minHeight:"100vh", background:T.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
-      <div style={{ textAlign:"center", marginBottom:40 }}>
+      <div style={{ textAlign:"center", marginBottom:40, position:"relative" }}>
+        {isEditing && onCancelEdit && (
+          <button onClick={onCancelEdit} style={{ position:"absolute", right:0, top:0, background:"transparent", border:`1px solid ${T.border}`, borderRadius:8, padding:"6px 14px", color:T.inkMid, fontSize:12, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>✕ Cancel</button>
+        )}
         <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:30, color:T.ink }}>SecondInni<span style={{ color:T.red, fontStyle:"italic" }}>_</span>gs</div>
-        <div style={{ fontSize:11, color:T.inkLight, letterSpacing:"0.15em", textTransform:"uppercase", marginTop:5 }}>Design Your Next Chapter</div>
+        <div style={{ fontSize:11, color:T.inkLight, letterSpacing:"0.15em", textTransform:"uppercase", marginTop:5 }}>{isEditing ? "Update Your Profile" : "Design Your Next Chapter"}</div>
       </div>
       <div style={{ display:"flex", gap:8, marginBottom:32 }}>
         {STEPS.map((_,i)=><div key={i} style={{ width:i<=step?28:8, height:8, borderRadius:4, background: i<step?T.accent:i===step?T.amber:T.border, transition:"all 0.3s" }} />)}
@@ -1456,6 +1453,8 @@ export default function App() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [user, setUser] = useState(null);
   const [showSubModal, setShowSubModal] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [fin2, setFin2] = useState(null); // null = scenario B hidden
   const [scrollVisible, setScrollVisible] = useState(false);
   const chatRef = useRef(null);
   const googleBtnRef = useRef(null);
@@ -1567,6 +1566,12 @@ export default function App() {
     setChatMsgs([{ role:"assistant", content:greeting }]);
   };
 
+  const updateProfile = (form) => {
+    setProfile(form);
+    if (user) { try { localStorage.setItem("si_profile", JSON.stringify(form)); } catch {} }
+    setShowEditProfile(false);
+  };
+
   const resetAll = () => {
     setProfile(null);
     setTab("dashboard");
@@ -1633,7 +1638,13 @@ User profile:
 - Children's ages: ${profile?.kidsAge || "not applicable"}
 - Ageing parents: ${profile?.agingParents || "not specified"}
 - Family notes: ${profile?.dependentNotes || "none"}
-- Latest readiness scores (1–10): Financial clarity: ${latestReadiness.financial}, Career direction: ${latestReadiness.direction}, Energy & wellbeing: ${latestReadiness.energy}, Family alignment: ${latestReadiness.family}, Weekly progress: ${latestReadiness.progress}. Overall readiness: ${overallReadiness}/10.
+- Latest readiness scores (1–10): Financial clarity: ${latestReadiness.financial}, Career direction: ${latestReadiness.direction}, Energy & wellbeing: ${latestReadiness.energy}, Family alignment: ${latestReadiness.family}, Weekly progress: ${latestReadiness.progress}. Overall readiness: ${overallReadiness}/10. Weakest dimension: ${weakestDim.label}.
+
+Live progress data:
+- Financial: ₹${(fin.savings/100000).toFixed(1)}L saved, target ₹${(targetCorpus/100000).toFixed(1)}L (${Math.round(progress)}% built), monthly savings ₹${(monthlySave/1000).toFixed(0)}k, ${monthsLeft>600?"rate needs adjustment":`${Math.ceil(monthsLeft/12)}y ${monthsLeft%12}m to goal`}
+- Career roadmap: ${doneTasks}/${totalTasks} tasks complete (${careerPct}%)
+- Top location match: ${topLoc ? `${topLoc.name}, ${topLoc.region} (score ${topLoc.overall}/10)` : "not searched yet"}
+- Readiness entries logged: ${readinessLog.length} week${readinessLog.length===1?"":"s"}
 
 Guidelines:
 - Ask ONE deep, thoughtful question at a time — never multiple questions
@@ -1738,6 +1749,29 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
   const noCount = answered.filter(a=>a==="No").length;
   const answeredCount = answered.filter(Boolean).length;
   const decScore = answeredCount > 0 ? Math.round((yesCount / DECISION_FILTERS.length) * 100) : null;
+
+  // ── "This week's focus" logic ─────────────────────────────────────────────
+  const weakestDim = READINESS_DIMS.reduce((a,b) => latestReadiness[a.key] <= latestReadiness[b.key] ? a : b);
+  const weeklyFocus = (() => {
+    const items = [];
+    if (readinessLog.length === 0) {
+      items.push({ icon:"📋", text:"Log your first readiness check", tab:"stress", cta:"Open Readiness Check" });
+    } else if (latestReadiness[weakestDim.key] < 6) {
+      items.push({ icon:"⚠", text:`Weakest area: ${weakestDim.label} (${latestReadiness[weakestDim.key]}/10) — focus here first`, tab:"stress", cta:"Log this week" });
+    }
+    if (careerPct < 50) {
+      const nextStep = careerSteps.find((s,si) => s.tasks.some((_,ti) => !careerChecks[`${si}-${ti}`]));
+      const nextTask = nextStep ? nextStep.tasks.find((_,ti) => !careerChecks[`${careerSteps.indexOf(nextStep)}-${ti}`]) : null;
+      items.push({ icon:"🧭", text: nextTask ? `Next career task: ${nextTask}` : "Continue your career roadmap", tab:"career", cta:"Open Roadmap" });
+    }
+    if (progress < 50) {
+      items.push({ icon:"💰", text:`Financial corpus ${Math.round(progress)}% built — review your savings rate`, tab:"runway", cta:"Open Runway" });
+    }
+    if (!aiLocsSearched) {
+      items.push({ icon:"🗺️", text:"Discover cities that match your lifestyle — location search pending", tab:"location", cta:"Find Cities" });
+    }
+    return items.slice(0, 3);
+  })();
 
   if (!profile) return (<><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/><Onboarding onComplete={onboard} T={T}/></>);
 
@@ -1902,7 +1936,10 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 </div>
               </div>
               <div style={card}>
-                <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:16 }}>Your Profile</div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink }}>Your Profile</div>
+                  <button onClick={()=>setShowEditProfile(true)} style={{ ...sBtn("ghost"), padding:"5px 12px", fontSize:11 }}>✎ Edit</button>
+                </div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                   {[
                     ["Profession",profile.profession||"—"],
@@ -1921,6 +1958,27 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 {profile.priorities?.length>0 && <div style={{ marginTop:12, display:"flex", gap:6, flexWrap:"wrap" }}>{profile.priorities.map(p=><span key={p} style={sTag(T.accent)}>{p}</span>)}</div>}
               </div>
             </div>
+            {/* This week's focus */}
+            {weeklyFocus.length > 0 && (
+              <div style={{ ...card, borderLeft:`4px solid ${T.amber}`, marginBottom:20 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+                  <span style={{ fontSize:16 }}>🎯</span>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink }}>This week's focus</div>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  {weeklyFocus.map((f,i) => (
+                    <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:T.bgMuted, borderRadius:10, padding:"10px 14px" }}>
+                      <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                        <span style={{ fontSize:15 }}>{f.icon}</span>
+                        <span style={{ fontSize:13, color:T.ink }}>{f.text}</span>
+                      </div>
+                      <button onClick={()=>setTab(f.tab)} style={{ ...sBtn("ghost"), padding:"5px 14px", fontSize:11, flexShrink:0, marginLeft:12 }}>{f.cta} →</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={card}>
               <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:16 }}>Recommended Transition Tracks — {profile.profession}</div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
@@ -2210,6 +2268,56 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                   <div style={{ marginTop:8, fontSize:11, color:T.inkLight }}><span style={{ color:T.accent }}>■</span> Target reached &nbsp;<span style={{ color:T.amber+"88" }}>■</span> In progress</div>
                 </div>
               </div>
+            </div>
+
+            {/* Scenario B */}
+            <div style={{ marginTop:24 }}>
+              {!fin2 ? (
+                <button onClick={()=>setFin2({...fin})} style={{ ...sBtn("ghost"), display:"flex", alignItems:"center", gap:8 }}>
+                  + Add Scenario B — compare a different set of numbers
+                </button>
+              ) : (
+                <div style={{ ...card, border:`2px solid ${T.amber}44` }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.amber }}>Scenario B</div>
+                    <button onClick={()=>setFin2(null)} style={{ background:"transparent", border:`1px solid ${T.border}`, borderRadius:7, padding:"4px 10px", color:T.inkMid, fontSize:11, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>Remove</button>
+                  </div>
+                  {(() => {
+                    const { monthlySave:ms2, targetCorpus:tc2, progress:pr2, monthsLeft:ml2 } = calcFinancials(fin2.income, fin2.expenses, fin2.savings, fin2.targetYears);
+                    return (
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+                        <div>
+                          <div style={{ fontSize:13, color:T.inkMid, marginBottom:12 }}>Adjust numbers for Scenario B:</div>
+                          {[["Monthly Income","income","₹"],["Monthly Expenses","expenses","₹"],["Current Savings","savings","₹"],["Target Runway (years)","targetYears",""]].map(([lbl,key,prefix])=>(
+                            <div key={key} style={{ marginBottom:10 }}>
+                              <label style={{ ...sLabel, display:"block", marginBottom:4 }}>{lbl}</label>
+                              <div style={{ display:"flex", alignItems:"center", gap:8 }}>{prefix&&<span style={{ color:T.inkMid, fontSize:14 }}>{prefix}</span>}<input type="number" style={sInput} value={fin2[key]} onChange={e=>setFin2({...fin2,[key]:+e.target.value})} step={key==="targetYears"?1:10000}/></div>
+                            </div>
+                          ))}
+                        </div>
+                        <div>
+                          <div style={{ fontSize:13, color:T.inkMid, marginBottom:12 }}>Side-by-side comparison:</div>
+                          {[
+                            ["Monthly Savings", `₹${(monthlySave/1000).toFixed(0)}k`, `₹${(ms2/1000).toFixed(0)}k`, ms2>monthlySave],
+                            ["Target Corpus",   `₹${(targetCorpus/100000).toFixed(1)}L`, `₹${(tc2/100000).toFixed(1)}L`, tc2<targetCorpus],
+                            ["Progress",        `${Math.round(progress)}%`, `${Math.round(pr2)}%`, pr2>progress],
+                            ["Time to Goal",    monthsLeft>600?"—":`${Math.ceil(monthsLeft/12)}y ${monthsLeft%12}m`, ml2>600?"—":`${Math.ceil(ml2/12)}y ${ml2%12}m`, ml2<monthsLeft],
+                          ].map(([label,a,b,bWins])=>(
+                            <div key={label} style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, padding:"8px 0", borderBottom:`1px solid ${T.border}` }}>
+                              <div style={{ fontSize:12, color:T.inkLight }}>{label}</div>
+                              <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>{a}</div>
+                              <div style={{ fontSize:13, fontWeight:700, color:bWins?T.accent:T.inkMid }}>{b}{bWins?" ✓":""}</div>
+                            </div>
+                          ))}
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, paddingTop:8 }}>
+                            <div style={{ fontSize:11, color:T.inkLight }}/><div style={{ fontSize:11, color:T.inkLight }}>Scenario A</div><div style={{ fontSize:11, color:T.accent, fontWeight:700 }}>Scenario B</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -2545,6 +2653,14 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
           aria-label="Scroll to top"
           style={{ position:"fixed", bottom:28, right:28, zIndex:500, width:44, height:44, borderRadius:"50%", background:T.accent, border:"none", color:T.dark?"#111":"#fff", fontSize:20, cursor:"pointer", boxShadow:`0 4px 16px ${T.accent}55`, display:"flex", alignItems:"center", justifyContent:"center", transition:"opacity 0.2s" }}
         >↑</button>
+      )}
+
+      {/* ── Edit Profile Modal ── */}
+      {showEditProfile && (
+        <div role="dialog" aria-modal="true" aria-label="Edit your profile" style={{ position:"fixed", inset:0, zIndex:3000, background:T.bg, overflowY:"auto" }}>
+          <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+          <Onboarding onComplete={updateProfile} T={T} isEditing={true} initialForm={profile} onCancelEdit={()=>setShowEditProfile(false)}/>
+        </div>
       )}
 
       {/* ── Reset Confirmation Modal ── */}
