@@ -702,7 +702,7 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
                   Start Planning →
                 </button>
               )}
-              <div style={{ fontSize:11, color:T.inkLight }}>✓ Free &nbsp;·&nbsp; ✓ No account required &nbsp;·&nbsp; ✓ Your data stays private</div>
+              <div style={{ fontSize:11, color:T.inkLight }}>✓ Free &nbsp;·&nbsp; ✓ No account required &nbsp;·&nbsp; ✓ Data saved in your browser only</div>
             </div>
           </div>
           {/* RIGHT PANEL — visual */}
@@ -1003,7 +1003,7 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
               </button>
             </div>
             <div style={{ display:"flex", gap:28, justifyContent:"center", flexWrap:"wrap" }}>
-              {["✓ Free to start","✓ No account needed","✓ Your data stays private","✓ First insight in 5 minutes"].map((t,i)=>(
+              {["✓ Free to start","✓ No account needed","✓ Data saved in your browser only","✓ First insight in 5 minutes"].map((t,i)=>(
                 <div key={i} style={{ fontSize:13, color:"rgba(255,255,255,0.45)", fontWeight:600 }}>{t}</div>
               ))}
             </div>
@@ -1345,7 +1345,7 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
           </div>
         </div>
       </div>
-      <div style={{ marginTop:16, fontSize:11, color:T.inkLight, letterSpacing:"0.08em" }}>Your data stays in this session only · No account required</div>
+      <div style={{ marginTop:16, fontSize:11, color:T.inkLight, letterSpacing:"0.08em" }}>Your data is saved in your browser — never on our servers · No account required</div>
     </div>
   );
 }
@@ -1423,7 +1423,7 @@ function SubscriptionModal({ user, onClose, googleBtnRef, T }) {
             </div>
           ))}
         </div>
-        <div style={{ textAlign:"center", marginTop:20, fontSize:11, color:T.inkLight }}>No credit card required for Starter · Cancel Pro anytime · Your data stays private</div>
+        <div style={{ textAlign:"center", marginTop:20, fontSize:11, color:T.inkLight }}>No credit card required for Starter · Cancel Pro anytime · Your data stays in your browser — never on our servers</div>
       </div>
     </div>
   );
@@ -1502,20 +1502,58 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [showSubModal, T.dark]);
 
-  // ── Restore profile from localStorage for logged-in users ──────────────────
+  // ── Restore all state from localStorage on mount (works for everyone) ────────
   useEffect(() => {
     try {
-      const savedUser = JSON.parse(localStorage.getItem("si_user"));
+      const savedUser    = JSON.parse(localStorage.getItem("si_user"));
       const savedProfile = JSON.parse(localStorage.getItem("si_profile"));
-      if (savedUser && savedProfile && !profile) {
-        setUser(savedUser);
+      const savedFin     = JSON.parse(localStorage.getItem("si_fin"));
+      const savedFin2    = JSON.parse(localStorage.getItem("si_fin2"));
+      const savedTheme   = localStorage.getItem("si_theme");
+      const savedLog     = JSON.parse(localStorage.getItem("si_readiness_log"));
+      const savedChecks  = JSON.parse(localStorage.getItem("si_career_checks"));
+      const savedAiLocs  = JSON.parse(localStorage.getItem("si_ai_locs"));
+      const savedSelLoc  = JSON.parse(localStorage.getItem("si_sel_loc"));
+      const savedDecIn   = JSON.parse(localStorage.getItem("si_dec_input"));
+      const savedDecAns  = JSON.parse(localStorage.getItem("si_dec_answers"));
+      const savedChat    = JSON.parse(localStorage.getItem("si_chat"));
+
+      if (savedProfile) {
         setProfile(savedProfile);
+        if (savedUser) setUser(savedUser);
         const yl = savedProfile.transitionAge && savedProfile.age
           ? parseInt(savedProfile.transitionAge) - parseInt(savedProfile.age) : null;
-        setChatMsgs([{ role:"assistant", content:`Welcome back${savedProfile.name?`, ${savedProfile.name}`:""}. Good to see you again.\n\nYou're ${yl?`${yl} year${yl===1?"":"s"} away from`:"working toward"} your transition at age ${savedProfile.transitionAge||"your target"} from ${savedProfile.profession||"your current role"}.\n\nWhat would you like to work on today?` }]);
+        // restore chat or generate welcome-back message
+        if (savedChat && savedChat.length > 0) {
+          setChatMsgs(savedChat);
+        } else {
+          setChatMsgs([{ role:"assistant", content:`Welcome back${savedProfile.name?`, ${savedProfile.name}`:""}. Good to see you again.\n\nYou're ${yl?`${yl} year${yl===1?"":"s"} away from`:"working toward"} your transition at age ${savedProfile.transitionAge||"your target"} from ${savedProfile.profession||"your current role"}.\n\nWhat would you like to work on today?` }]);
+        }
       }
+      if (savedFin)    setFin(savedFin);
+      if (savedFin2)   setFin2(savedFin2);
+      if (savedTheme && THEMES[savedTheme]) setThemeId(savedTheme);
+      if (savedLog)    setReadinessLog(savedLog);
+      if (savedChecks) setCareerChecks(savedChecks);
+      if (savedAiLocs && savedAiLocs.length > 0) { setAiLocs(savedAiLocs); setAiLocsSearched(true); }
+      if (savedSelLoc) setSelLoc(savedSelLoc);
+      if (savedDecIn)  setDecInput(savedDecIn);
+      if (savedDecAns) setDecAnswers(savedDecAns);
     } catch {}
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Persist all state to localStorage on every change ─────────────────────
+  useEffect(() => { try { if (profile) localStorage.setItem("si_profile", JSON.stringify(profile)); } catch {} }, [profile]);
+  useEffect(() => { try { localStorage.setItem("si_fin", JSON.stringify(fin)); } catch {} }, [fin]);
+  useEffect(() => { try { if (fin2) localStorage.setItem("si_fin2", JSON.stringify(fin2)); else localStorage.removeItem("si_fin2"); } catch {} }, [fin2]);
+  useEffect(() => { try { localStorage.setItem("si_theme", themeId); } catch {} }, [themeId]);
+  useEffect(() => { try { localStorage.setItem("si_readiness_log", JSON.stringify(readinessLog)); } catch {} }, [readinessLog]);
+  useEffect(() => { try { localStorage.setItem("si_career_checks", JSON.stringify(careerChecks)); } catch {} }, [careerChecks]);
+  useEffect(() => { try { localStorage.setItem("si_ai_locs", JSON.stringify(aiLocs)); } catch {} }, [aiLocs]);
+  useEffect(() => { try { localStorage.setItem("si_sel_loc", JSON.stringify(selLoc)); } catch {} }, [selLoc]);
+  useEffect(() => { try { localStorage.setItem("si_dec_input", JSON.stringify(decInput)); } catch {} }, [decInput]);
+  useEffect(() => { try { localStorage.setItem("si_dec_answers", JSON.stringify(decAnswers)); } catch {} }, [decAnswers]);
+  useEffect(() => { try { if (chatMsgs.length > 0) localStorage.setItem("si_chat", JSON.stringify(chatMsgs.slice(-40))); } catch {} }, [chatMsgs]);
 
   // ── Document title update on tab change ───────────────────────────────────
   useEffect(() => {
@@ -1554,8 +1592,6 @@ export default function App() {
 
   const onboard = (form) => {
     setProfile(form);
-    // Persist profile for logged-in users so it survives page refresh
-    if (user) { try { localStorage.setItem("si_profile", JSON.stringify(form)); } catch {} }
     // AI locations will be fetched on demand in the location tab
     setSelLoc([]);
     const yearsLeft = form.transitionAge && form.age ? parseInt(form.transitionAge)-parseInt(form.age) : null;
@@ -1568,14 +1604,15 @@ export default function App() {
 
   const updateProfile = (form) => {
     setProfile(form);
-    if (user) { try { localStorage.setItem("si_profile", JSON.stringify(form)); } catch {} }
     setShowEditProfile(false);
   };
 
   const resetAll = () => {
+    // Clear state
     setProfile(null);
     setTab("dashboard");
     setFin({ income:150000, expenses:65000, savings:800000, targetYears:5 });
+    setFin2(null);
     setReadinessLog([]);
     setNewReadiness({ financial:6, direction:6, energy:7, family:7, progress:6 });
     setSelLoc([]); setLocFilter("All");
@@ -1584,6 +1621,12 @@ export default function App() {
     setDecInput({ text:"" }); setDecAnswers({});
     setChatMsgs([]); setChatIn(""); setChatLoading(false);
     setShowResetConfirm(false);
+    // Clear all persisted data from localStorage
+    try {
+      ["si_profile","si_fin","si_fin2","si_readiness_log","si_career_checks",
+       "si_ai_locs","si_sel_loc","si_dec_input","si_dec_answers","si_chat",
+       "si_user"].forEach(k => localStorage.removeItem(k));
+    } catch {}
   };
 
   const printProfile = () => {
@@ -1844,7 +1887,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
         <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
           <span aria-hidden="true" style={{ fontSize:13 }}>🤖</span>
           <span style={{ fontSize:11, color:T.amber, fontWeight:700, flexShrink:0 }}>AI-generated content</span>
-          <span style={{ fontSize:11, color:T.inkMid }}>· For personal planning only · Not financial, legal, or medical advice · Data stays in your browser</span>
+          <span style={{ fontSize:11, color:T.inkMid }}>· For personal planning only · Not financial, legal, or medical advice · Saved locally in your browser — never on our servers</span>
         </div>
       </div>
 
@@ -2640,7 +2683,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
         {/* Disclaimer strip */}
         <div style={{ padding:"10px 28px", display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
           <span style={{ fontSize:10, color:T.inkLight, lineHeight:1.6 }}>
-            <strong style={{ color:T.inkMid }}>Disclaimer:</strong> AI-generated content is for personal planning only — not financial, legal, medical, or immigration advice. Verify important decisions with qualified professionals. Financial figures are illustrative. City data is AI-estimated and may not reflect current conditions. Your data is not stored — it lives in this browser session only. Powered by Claude (Anthropic). © 2026 SecondInnigs · <a href="https://secondinnigs.in" style={{ color:T.inkLight, textDecoration:"none" }}>secondinnigs.in</a>
+            <strong style={{ color:T.inkMid }}>Disclaimer:</strong> AI-generated content is for personal planning only — not financial, legal, medical, or immigration advice. Verify important decisions with qualified professionals. Financial figures are illustrative. City data is AI-estimated and may not reflect current conditions. Your data is saved locally in your browser and never sent to our servers (AI coaching messages are processed via Anthropic's API and not retained). Powered by Claude (Anthropic). © 2026 SecondInnigs · <a href="https://secondinnigs.in" style={{ color:T.inkLight, textDecoration:"none" }}>secondinnigs.in</a>
           </span>
         </div>
       </footer>
