@@ -702,6 +702,90 @@ function Onboarding({ onComplete, T }) {
           </div>
         </div>
 
+        {/* ── SECTION: #FIND THE N ──────────────────────────────────────────── */}
+        <div id="find-the-n" style={{ background:T.bgCard, padding:"90px 60px", borderTop:`1px solid ${T.border}` }}>
+          <div style={{ maxWidth:860, margin:"0 auto", textAlign:"center" }}>
+            <div style={{ display:"inline-block", fontSize:11, color:T.amber, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:20, background:T.amberLight, border:`1px solid ${T.amber}33`, borderRadius:20, padding:"5px 16px" }}>#FindTheN</div>
+
+            {/* URL visual */}
+            <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:44, color:T.ink, letterSpacing:"0.12em", margin:"0 0 6px" }}>
+              secondinni<span style={{ color:T.red, fontStyle:"italic", opacity:0.9 }}>_</span>gs.in
+            </div>
+            <div style={{ display:"flex", justifyContent:"center", gap:0, marginBottom:8 }}>
+              {"secondinnigs.in".split("").map((_, i) => {
+                const missing = i === 10;
+                return (
+                  <div key={i} style={{ width:20, textAlign:"center", fontSize:9, color: missing ? T.red : T.inkLight, fontWeight: missing ? 700 : 400 }}>
+                    {missing ? "↑" : ""}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ fontSize:13, color:T.inkLight, marginBottom:8, letterSpacing:"0.04em" }}>
+              "innings" has <strong style={{color:T.ink}}>3 N's</strong> · our URL has <strong style={{color:T.red}}>2</strong> · one is missing
+            </div>
+
+            <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:36, color:T.ink, margin:"28px 0 16px", lineHeight:1.2 }}>
+              That missing N is yours.<br/>
+              <span style={{ color:T.accent }}>What's the N you've been waiting for?</span>
+            </h2>
+            <p style={{ fontSize:15, color:T.inkMid, lineHeight:1.8, maxWidth:560, margin:"0 auto 36px" }}>
+              Pick the N-word that describes what's been missing from your life. Then share it — and start building it.
+            </p>
+
+            {/* N-word chips */}
+            <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap", marginBottom:40 }}>
+              {[
+                { word:"Now",           sub:"The time is now" },
+                { word:"Next",          sub:"My next chapter" },
+                { word:"New Start",     sub:"A clean slate" },
+                { word:"No Boss",       sub:"Full autonomy" },
+                { word:"Nomad Life",    sub:"Location freedom" },
+                { word:"Noble Purpose", sub:"Work that matters" },
+                { word:"No Regrets",    sub:"Live intentionally" },
+                { word:"Navigate",      sub:"Find my own way" },
+              ].map(({ word, sub }) => {
+                const active = selectedN === word;
+                return (
+                  <button key={word} onClick={() => setSelectedN(active ? null : word)} style={{ background: active ? T.amber+"22" : T.bg, border:`2px solid ${active ? T.amber : T.border}`, borderRadius:14, padding:"12px 22px", cursor:"pointer", fontFamily:"'Lato',sans-serif", textAlign:"left", transition:"all 0.18s", boxShadow: active ? `0 4px 20px ${T.amber}33` : "none" }}>
+                    <div style={{ fontSize:16, fontWeight:700, color: active ? T.amber : T.ink }}>
+                      <span style={{ color:T.amber }}>N</span>{word.slice(1)}
+                    </div>
+                    <div style={{ fontSize:10, color:T.inkLight, marginTop:3 }}>{sub}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Share card */}
+            {selectedN && (() => {
+              const tweetText = `I'm missing the N of "${selectedN}" — and I'm done waiting.\n\nStarting my second innings at secondinnigs.in\n\n#FindTheN #SecondInnigs`;
+              const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+              return (
+                <div style={{ background:T.bg, border:`2px solid ${T.amber}44`, borderRadius:22, padding:"40px 48px", maxWidth:520, margin:"0 auto", boxShadow:`0 12px 48px ${T.amber}22`, animation:"fadeUp 0.3s ease" }}>
+                  <div style={{ fontSize:11, color:T.amber, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:16 }}>#FindTheN</div>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:15, color:T.inkMid, marginBottom:6 }}>I'm missing the N of</div>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, marginBottom:4, lineHeight:1.1 }}>
+                    <span style={{ color:T.amber }}>N</span>{selectedN.slice(1)}
+                  </div>
+                  <div style={{ fontSize:13, color:T.inkMid, marginBottom:24, fontStyle:"italic" }}>Starting my second innings — one N at a time.</div>
+                  <div style={{ fontFamily:"monospace", fontSize:20, color:T.ink, letterSpacing:"0.15em", marginBottom:28, background:T.bgMuted, borderRadius:10, padding:"12px 20px", display:"inline-block" }}>
+                    secondinni<span style={{ color:T.red, fontWeight:700, fontStyle:"italic" }}>_</span>gs.in
+                  </div>
+                  <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+                    <button onClick={() => window.open(tweetUrl, "_blank")} style={{ background:"#000", border:"none", borderRadius:10, padding:"12px 28px", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ fontSize:16 }}>𝕏</span> Share on X
+                    </button>
+                    <button onClick={() => setStarted(true)} style={{ background:T.accent, border:"none", borderRadius:10, padding:"12px 28px", color:T.dark?"#111":"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>
+                      Start Finding It →
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+
         {/* ── SECTION 1: PURPOSE — WHAT IS SECOND INNINGS ───────────────────── */}
         <div id="purpose" style={{ background:T.bgCard, padding:"90px 60px" }}>
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
@@ -820,90 +904,6 @@ function Onboarding({ onComplete, T }) {
                 ))}
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* ── SECTION: #FIND THE N ──────────────────────────────────────────── */}
-        <div id="find-the-n" style={{ background:T.bg, padding:"90px 60px", borderTop:`1px solid ${T.border}` }}>
-          <div style={{ maxWidth:860, margin:"0 auto", textAlign:"center" }}>
-            <div style={{ display:"inline-block", fontSize:11, color:T.amber, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:20, background:T.amberLight, border:`1px solid ${T.amber}33`, borderRadius:20, padding:"5px 16px" }}>#FindTheN</div>
-
-            {/* URL visual */}
-            <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:44, color:T.ink, letterSpacing:"0.12em", margin:"0 0 6px" }}>
-              secondinni<span style={{ color:T.red, fontStyle:"italic", opacity:0.9 }}>_</span>gs.in
-            </div>
-            <div style={{ display:"flex", justifyContent:"center", gap:0, marginBottom:8 }}>
-              {"secondinnigs.in".split("").map((_, i) => {
-                const missing = i === 10; // the missing 'n' position (before 'g')
-                return (
-                  <div key={i} style={{ width:20, textAlign:"center", fontSize:9, color: missing ? T.red : T.inkLight, fontWeight: missing ? 700 : 400, letterSpacing:"0em" }}>
-                    {missing ? "↑" : ""}
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ fontSize:13, color:T.inkLight, marginBottom:8, letterSpacing:"0.04em" }}>
-              "innings" has <strong style={{color:T.ink}}>3 N's</strong> · our URL has <strong style={{color:T.red}}>2</strong> · one is missing
-            </div>
-
-            <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:36, color:T.ink, margin:"28px 0 16px", lineHeight:1.2 }}>
-              That missing N is yours.<br/>
-              <span style={{ color:T.accent }}>What's the N you've been waiting for?</span>
-            </h2>
-            <p style={{ fontSize:15, color:T.inkMid, lineHeight:1.8, maxWidth:560, margin:"0 auto 36px" }}>
-              Pick the N-word that describes what's been missing from your life. Then share it — and start building it.
-            </p>
-
-            {/* N-word chips */}
-            <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap", marginBottom:40 }}>
-              {[
-                { word:"Now",           sub:"The time is now" },
-                { word:"Next",          sub:"My next chapter" },
-                { word:"New Start",     sub:"A clean slate" },
-                { word:"No Boss",       sub:"Full autonomy" },
-                { word:"Nomad Life",    sub:"Location freedom" },
-                { word:"Noble Purpose", sub:"Work that matters" },
-                { word:"No Regrets",    sub:"Live intentionally" },
-                { word:"Navigate",      sub:"Find my own way" },
-              ].map(({ word, sub }) => {
-                const active = selectedN === word;
-                return (
-                  <button key={word} onClick={() => setSelectedN(active ? null : word)} style={{ background: active ? T.amber+"22" : T.bgCard, border:`2px solid ${active ? T.amber : T.border}`, borderRadius:14, padding:"12px 22px", cursor:"pointer", fontFamily:"'Lato',sans-serif", textAlign:"left", transition:"all 0.18s", boxShadow: active ? `0 4px 20px ${T.amber}33` : "none" }}>
-                    <div style={{ fontSize:16, fontWeight:700, color: active ? T.amber : T.ink }}>
-                      <span style={{ color:T.amber }}>N</span>{word.slice(1)}
-                    </div>
-                    <div style={{ fontSize:10, color:T.inkLight, marginTop:3 }}>{sub}</div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Share card */}
-            {selectedN && (() => {
-              const tweetText = `I'm missing the N of "${selectedN}" — and I'm done waiting.\n\nStarting my second innings at secondinnigs.in\n\n#FindTheN #SecondInnigs`;
-              const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-              return (
-                <div style={{ background:T.bgCard, border:`2px solid ${T.amber}44`, borderRadius:22, padding:"40px 48px", maxWidth:520, margin:"0 auto", boxShadow:`0 12px 48px ${T.amber}22`, animation:"fadeUp 0.3s ease" }}>
-                  <div style={{ fontSize:11, color:T.amber, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:16 }}>#FindTheN</div>
-                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:15, color:T.inkMid, marginBottom:6 }}>I'm missing the N of</div>
-                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, marginBottom:4, lineHeight:1.1 }}>
-                    <span style={{ color:T.amber }}>N</span>{selectedN.slice(1)}
-                  </div>
-                  <div style={{ fontSize:13, color:T.inkMid, marginBottom:24, fontStyle:"italic" }}>Starting my second innings — one N at a time.</div>
-                  <div style={{ fontFamily:"monospace", fontSize:20, color:T.ink, letterSpacing:"0.15em", marginBottom:28, background:T.bgMuted, borderRadius:10, padding:"12px 20px", display:"inline-block" }}>
-                    secondinni<span style={{ color:T.red, fontWeight:700, fontStyle:"italic" }}>_</span>gs.in
-                  </div>
-                  <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
-                    <button onClick={() => window.open(tweetUrl, "_blank")} style={{ background:"#000", border:"none", borderRadius:10, padding:"12px 28px", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", display:"flex", alignItems:"center", gap:8 }}>
-                      <span style={{ fontSize:16 }}>𝕏</span> Share on X
-                    </button>
-                    <button onClick={() => setStarted(true)} style={{ background:T.accent, border:"none", borderRadius:10, padding:"12px 28px", color:T.dark?"#111":"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>
-                      Start Finding It →
-                    </button>
-                  </div>
-                </div>
-              );
-            })()}
           </div>
         </div>
 
