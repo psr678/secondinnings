@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { escapeHtml, calcFinancials, validateStep, matchRegion as matchRegionUtil } from "./utils.js";
 
 // ── AI API ─────────────────────────────────────────────────────────────────
@@ -6,6 +6,15 @@ import { escapeHtml, calcFinancials, validateStep, matchRegion as matchRegionUti
 // Dev fallback: if /api/ai returns 404 (no Vercel CLI running), falls back to
 //               a direct Anthropic call using VITE_ANTHROPIC_KEY (local only).
 const DEV_KEY = import.meta.env.VITE_ANTHROPIC_KEY || "";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
+// Decode Google JWT payload (sub, name, email, picture) — not a security operation
+function parseGoogleJwt(token) {
+  try {
+    const b64 = token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
+    return JSON.parse(decodeURIComponent(atob(b64).split("").map(c=>"%"+("00"+c.charCodeAt(0).toString(16)).slice(-2)).join("")));
+  } catch { return null; }
+}
 
 async function askClaude(messages, systemPrompt, maxTokens = 1000) {
   const body = { max_tokens: maxTokens, messages };
@@ -149,12 +158,6 @@ const TRANSITION_TRACKS = {
   "Creative / Media": [{ title:"Creative Faculty / Workshop Leader",fit:9.0,desc:"Teach design, writing, or media at arts and communication schools." },{ title:"Independent Creative Practice",fit:8.5,desc:"Freelance work on your own terms. Portfolio over payroll." },{ title:"Content Creator / Author",fit:8.0,desc:"Write, produce, or curate. Build an audience around your expertise." }],
   "Other Professional": [{ title:"Domain Expert Consultant",fit:8.5,desc:"Independent consulting in your professional domain. Flexible retainer model." },{ title:"Visiting Faculty / Trainer",fit:8.0,desc:"Teach at professional institutions in your field." },{ title:"NGO / Purpose-Driven Work",fit:7.5,desc:"Apply expertise toward social impact. Lower income, higher meaning." }],
 };
-const GENERIC_PHASES = [
-  { label:"Now – T-5", title:"Authority Accumulation", desc:"Build leverage, deepen expertise, reduce political exposure, accelerate financial runway." },
-  { label:"T-5 – T-3", title:"Optionality Building", desc:"Make current role optional. Build external reputation. Warm your transition path." },
-  { label:"T-3 – T", title:"Controlled Deceleration", desc:"Reduce intensity. Test your post-career path part-time. Prepare clean exit." },
-  { label:"T onwards", title:"Selective Engagement", desc:"Work only on your terms. No targets. No politics. Full autonomy." },
-];
 const DECISION_FILTERS = [
   { q:"Does this increase my options / leverage?", tag:"Optionality" },
   { q:"Does this preserve my cognitive energy?", tag:"Energy" },
@@ -163,6 +166,246 @@ const DECISION_FILTERS = [
   { q:"Does this reduce volatility in my life?", tag:"Stability" },
   { q:"Does this align with my post-career path?", tag:"Direction" },
 ];
+
+// ── Personalisation helpers ────────────────────────────────────────────────────
+function buildCareerSteps(profession, postPath, yearsLeft) {
+  const phases = [
+    `Now – ${Math.max(1,yearsLeft-4)}y`,
+    `${Math.max(1,yearsLeft-4)}y – ${Math.max(2,yearsLeft-2)}y`,
+    `${Math.max(2,yearsLeft-2)}y – ${Math.max(3,yearsLeft-1)}y`,
+    `${Math.max(3,yearsLeft-1)}y – Transition`,
+  ];
+  const titles = ["Explore & Reposition","Build & Validate","Align & Pilot","Launch & Commit"];
+  const PATH_TASKS = {
+    "Switch to Academia / Teaching": [
+      ["Deliver your first guest lecture or workshop at a target institution","Identify 3–5 institutions aligned with your expertise and values","Join academic networks and faculty communities on LinkedIn","Write a 2-page teaching philosophy statement"],
+      ["Co-author a practitioner case study or academic paper","Apply for visiting faculty or adjunct positions","Build a full course outline for your core subject","Get peer feedback on your teaching or facilitation style"],
+      ["Negotiate a contractual or part-time academic engagement","Test income from coaching, bootcamps, or online courses","Secure first formal academic affiliation (even honorary)","Build your publication and speaking track record"],
+      ["Transition to your primary academic role","Launch a signature course, workshop series, or module","Build student mentorship relationships","Evaluate long-term research or administration potential"],
+    ],
+    "Start own Business / Consulting": [
+      ["Define your consulting niche and ideal client profile","Register business entity and set up basic infrastructure","Reach out to 10 warm contacts about your transition plans","Deliver a first pro-bono or low-cost engagement to build portfolio"],
+      ["Close your first paid consulting engagement","Build case studies from early client work","Identify 2–3 repeatable, scalable service offerings","Set pricing tiers and test market response"],
+      ["Systematise delivery — templates, SOPs, onboarding docs","Build a referral pipeline from satisfied early clients","Set monthly revenue targets and track them consistently","Explore part-time support as the practice grows"],
+      ["Achieve consistent revenue from your consulting practice","Gradually reduce employment income dependency","Build long-term retainer client relationships","Define and scale your sustainable business model"],
+    ],
+    "Freelance / Advisory roles": [
+      ["Identify 3 advisory or board opportunities in your domain","Update professional profiles for senior independent positioning","Define your advisory value proposition clearly in writing","Reach out to founders and leaders who could benefit from your experience"],
+      ["Close your first paid advisory or board mandate","Build a signature methodology you can consistently deliver","Develop a thought leadership or speaking angle","Explore equity-based advisory compensation models"],
+      ["Scale to 2–3 concurrent advisory engagements","Test passive income from content, IP, or licensing","Build a personal site or portfolio to attract inbound interest","Negotiate reduced hours at current employer to create capacity"],
+      ["Transition fully to advisory or freelance work","Maintain 4–6 active mandates at any time","Systematise outreach for consistent deal flow","Review income diversification and sustainability annually"],
+    ],
+    "Full Retirement": [
+      ["Validate your retirement corpus target with a qualified financial advisor","Begin shifting portfolio toward income-generating assets","Discuss retirement timeline explicitly and honestly with your family","Explore what purpose, community, and structure will look like post-work"],
+      ["Test retirement lifestyle with a 2-week sabbatical or unpaid leave","Identify volunteering, mentoring, or community engagement models","Build daily routines that could replace the structure work provides","Optimise health and fitness habits as a long-term energy investment"],
+      ["Finalise your financial plan, passive income streams, and SWR","Begin knowledge transfer and handover at work proactively","Set up rental, dividend, or annuity income streams","Identify your core 'reason to get up' in post-retirement life"],
+      ["Execute your clean exit from primary employment","Establish a fulfilling post-retirement rhythm and structure","Engage with purpose projects — mentoring, NGOs, travel, hobbies","Review financial health annually and adjust as needed"],
+    ],
+    "Part-time flexible work": [
+      ["Identify roles in your domain offering genuinely flexible arrangements","Explore negotiating part-time or remote options in your current role","Build a savings buffer to sustain a period of reduced income","Research the gig and project economy in your area of expertise"],
+      ["Pilot a flexible work arrangement for 3–6 months","Take on a first side project or freelance engagement","Map the minimum income floor needed to sustain your lifestyle","Reduce commute obligations and fixed costs wherever possible"],
+      ["Confirm a permanent part-time or flexible arrangement","Replace any income gap with 2–3 additional flexible income streams","Establish firm, non-negotiable boundaries around your time","Invest in health, hobbies, and meaningful personal projects"],
+      ["Sustain a balanced portfolio of flexible work you enjoy","Evaluate which engagements energise vs. drain you each quarter","Build long-term relationships with remote or flexible clients","Design your ideal week and protect it with discipline"],
+    ],
+    "NGO / Social Impact": [
+      ["Identify 3 NGOs or impact organisations aligned with your cause","Volunteer or contribute pro-bono to understand the sector deeply","Clarify which cause area energises you most consistently","Connect with impact sector professionals in your city and network"],
+      ["Apply for advisory, project-based, or board roles in NGOs","Attend impact sector conferences or community convenings","Develop a clear value proposition for impact organisations","Build credibility in your chosen cause through visible action"],
+      ["Secure a formal part-time or leadership role in an NGO","Develop funding and grant literacy if relevant to your work","Build a peer network within the impact sector","Test compensation models — stipend, honorarium, or board role"],
+      ["Transition into a full-time or primary NGO leadership role","Drive a flagship programme, campaign, or initiative","Measure and communicate your impact with data and stories","Build sustainable funding, partnerships, or institutional backing"],
+    ],
+    "Creative Pursuits": [
+      ["Dedicate 5 hours per week to your primary creative practice","Join a creative community, cohort, or learning group","Complete one small creative project end-to-end without waiting for perfect","Research the monetisation landscape for your chosen art form"],
+      ["Build an audience around your creative work — blog, newsletter, or social media","Submit or exhibit work in relevant platforms, shows, or publications","Identify 2–3 sustainable income models for your creative practice","Develop a body of work you're genuinely proud to share publicly"],
+      ["Close your first paid creative project, commission, or collaboration","Launch an online course, channel, or product around your creative domain","Carve out protected, uninterrupted creative time each week","Connect with publishers, galleries, studios, or distribution platforms"],
+      ["Make creativity your primary professional identity","Build sustainable income from your creative output","Exhibit, perform, publish, or distribute at meaningful scale","Define the legacy creative project you want to be known for"],
+    ],
+    "Not sure yet": [
+      ["Start a possibilities journal — write down 5 different paths to explore","Have conversations with 10 people who've made successful career transitions","Take a professional career assessment or invest in a coaching session","Reduce major financial obligations to maximise your optionality"],
+      ["Identify your top 2–3 candidate paths based on what you've explored","Run small, low-risk experiments — a workshop, project, or part-time role","Evaluate energy, meaning, and income fit for each path honestly","Narrow to one primary direction with a clear backup plan"],
+      ["Commit to your chosen direction for 12 months before reassessing","Build the skills and relationships needed for your chosen path","Test the lifestyle fit of your intended transition hands-on","Build a financial buffer to reduce pressure on your decision"],
+      ["Execute your transition with full intention and openness","Reflect and course-correct without self-judgment","Build new identity and daily routines around your next chapter","Document your journey — it will help others in the same position"],
+    ],
+  };
+  const PROFESSION_NUANCE = {
+    "IT / Technology": "Translate your technical depth into thought leadership — write, speak, and mentor publicly in your domain",
+    "Finance / Banking": "Leverage your financial credibility to build trust rapidly in your target new domain",
+    "Healthcare / Medicine": "Use your clinical credibility as an immediate trust signal in your chosen transition path",
+    "Legal / Law": "Position your legal and analytical expertise as a strategic differentiator in your new context",
+    "Engineering / Manufacturing": "Apply systems thinking and first-principles problem solving to accelerate your new domain",
+    "Education / Academia": "Use your teaching and curriculum experience as an immediate credibility advantage in any path",
+    "Government / Public Sector": "Translate your policy experience and stakeholder management skills into advisory or leadership roles",
+    "Entrepreneurship / Business": "Apply startup agility, team-building instinct, and commercial thinking to your new venture or role",
+    "Creative / Media": "Use your communication and storytelling skills to accelerate visibility in whatever path you choose",
+    "Other Professional": "Document your domain expertise into a clear, transferable value proposition for your new audience",
+  };
+  const baseTasks = PATH_TASKS[postPath] || PATH_TASKS["Not sure yet"];
+  const nuance = PROFESSION_NUANCE[profession] || PROFESSION_NUANCE["Other Professional"];
+  return baseTasks.map((tasks, i) => ({
+    phase: phases[i],
+    title: titles[i],
+    tasks: i === 0 ? [...tasks.slice(0,3), nuance] : tasks,
+  }));
+}
+
+function buildTimelinePhases(postPath, stressDrivers, yearsLeft) {
+  const yT1 = yearsLeft >= 6 ? 5 : Math.max(1, Math.floor(yearsLeft * 0.65));
+  const yT2 = Math.max(1, Math.min(Math.round(yearsLeft * 0.3), yT1 - 1));
+  const labels = ["Now – T-"+yT1, "T-"+yT1+" – T-"+yT2, "T-"+yT2+" – T", "T onwards"];
+  const hasOverwork = (stressDrivers||[]).includes("Heavy workload") || (stressDrivers||[]).includes("Work-life imbalance");
+  const hasPurpose = (stressDrivers||[]).includes("Loss of purpose");
+  const hasFinancial = (stressDrivers||[]).includes("Financial pressure");
+  const hasToxic = (stressDrivers||[]).includes("Toxic environment") || (stressDrivers||[]).includes("Office politics");
+  const hasAI = (stressDrivers||[]).includes("Job uncertainty / AI disruption");
+  const descs = {
+    "Switch to Academia / Teaching": [
+      "Build academic credibility while still employed. Deliver guest sessions, publish practitioner insights, and map your target institutions.",
+      "Make academic roles available to you without depending on them. Secure your first affiliation or adjunct role while your financial runway holds.",
+      "Reduce corporate intensity. Pilot teaching or research part-time. Validate that the academic pace fits your energy and lifestyle.",
+      "Full transition to academic life. Own your subject. Teach, mentor, and build a body of work entirely on your terms.",
+    ],
+    "Start own Business / Consulting": [
+      "Build your consulting identity and first client relationships while still employed. Define your niche and close your first engagement.",
+      "Make employment optional. Grow consulting income to a level that validates your model before you make the leap.",
+      "Reduce employment dependency. Run both in parallel. Validate sustainable cash flow and client pipeline.",
+      "Full launch of your consulting practice. No targets but your own. Build, grow, and refine entirely on your terms.",
+    ],
+    "Freelance / Advisory roles": [
+      "Position yourself as a senior independent voice. Identify advisory opportunities and signal your transition intent to warm networks.",
+      "Close your first paid mandates. Build the track record that makes inbound advisory interest inevitable.",
+      "Scale to multiple concurrent mandates. Reduce employment hours. Test the freelance lifestyle for real.",
+      "Full portfolio career. Choose only what energises you. Work on your schedule, for as long as you choose.",
+    ],
+    "Full Retirement": [
+      `Build your financial runway aggressively.${hasFinancial?" Every rupee saved now is a month of freedom later.":""} Clarify what full retirement will look and feel like.`,
+      "Validate your corpus, passive income streams, and lifestyle assumptions. Test retirement life in short experiments.",
+      "Begin the handover. Reduce work obligations. Prepare your family, your finances, and yourself for the shift.",
+      "Full retirement. Design your days with intention. Purpose, health, community, and financial peace — all on your terms.",
+    ],
+    "NGO / Social Impact": [
+      "Identify your cause and begin building credibility in it through volunteering and pro-bono contribution.",
+      "Secure your first formal impact role or board position. Prove you can add value without your corporate title.",
+      "Transition into a part-time impact leadership role. Validate that the mission and culture align with your values.",
+      "Full-time purpose work. Lead with conviction. Measure your impact. Build something that outlasts your involvement.",
+    ],
+    "Creative Pursuits": [
+      "Start creating now — before you feel ready. Volume and consistency beat perfection at this stage.",
+      "Build an audience and a body of work. Identify your strongest medium and your first viable monetisation path.",
+      "Carve out serious creative time. Pilot your first paid creative project. Validate the model.",
+      "Creativity as your primary identity. Create, exhibit, publish, perform. On your schedule, for your audience.",
+    ],
+  };
+  const defaults = [
+    `Build leverage and expertise.${hasToxic?" Limit political entanglement and protect your energy.":""}${hasFinancial?" Accelerate savings aggressively.":""} Reduce your dependency on any single employer.`,
+    `Make your current role optional.${hasPurpose?" Begin actively testing what gives you meaning outside of work.":""} Warm your transition path and build external reputation.`,
+    `Reduce intensity.${hasOverwork?" Begin protecting your cognitive energy — it's your most depleted asset.":""} Test your post-career path part-time. Prepare a deliberate, clean exit.`,
+    `Full transition.${hasAI?" Build a career identity that no algorithm can replace.":""} New role, new rhythm, new rules — entirely yours.`,
+  ];
+  const chosen = descs[postPath] || defaults;
+  return [
+    { label:labels[0], title:"Authority Accumulation", desc:chosen[0] },
+    { label:labels[1], title:"Optionality Building",   desc:chosen[1] },
+    { label:labels[2], title:"Controlled Deceleration",desc:chosen[2] },
+    { label:labels[3], title:"Second Innings Launch",  desc:chosen[3] },
+  ];
+}
+
+function buildPrinciples(profile) {
+  const sd = profile?.stressDrivers || [];
+  const hasToxic   = sd.includes("Toxic environment") || sd.includes("Office politics");
+  const hasOverwork= sd.includes("Heavy workload")    || sd.includes("Work-life imbalance");
+  const hasPurpose = sd.includes("Loss of purpose");
+  const hasAI      = sd.includes("Job uncertainty / AI disruption");
+  const tAge       = profile?.transitionAge || "your target age";
+  const path       = profile?.postPath || "";
+  return [
+    {
+      icon:"◆",
+      title: hasToxic ? "Contribute. Don't absorb." : "Contribute. Don't carry.",
+      desc:  hasToxic
+        ? "Give structured input. Refuse to own others' dysfunction. Your energy is finite — protect it from toxic dynamics and invisible obligations."
+        : "Give structured input. Detach from outcome ownership. Outcome belongs to the system — input quality belongs to you.",
+    },
+    {
+      icon:"◈",
+      title:"The Transition Age Test",
+      desc:`Before any major decision: "Will this serve my future self at ${tAge}?" If the answer is no — reduce your investment in it. This filter cuts through almost every false priority.`,
+    },
+    {
+      icon:"◎",
+      title: hasAI ? "Build human-only identity." : "Build portable identity.",
+      desc:  hasAI
+        ? "Write, speak, mentor, and advise — roles that require judgment, empathy, and trust. AI replaces information processing. It cannot replace you at your best."
+        : "Writing, speaking, advising. Your reputation must outlive your employer. Build it now, while you have the platform and the credibility to accelerate it.",
+    },
+    {
+      icon:"◉",
+      title: hasOverwork ? "Energy is the asset." : "Energy over income.",
+      desc:  hasOverwork
+        ? "You are already in energy deficit. From here, every commitment must pass one test: does this restore or deplete me? Income can be rebuilt. Burnout cannot be reversed overnight."
+        : "From mid-transition, cognitive energy is your scarcest resource. Protect it ruthlessly. It compounds into your creativity, decisions, and relationships.",
+    },
+    {
+      icon:"◐",
+      title: hasPurpose ? "Meaning is built, not found." : "Criteria over arbitration.",
+      desc:  hasPurpose
+        ? "Stop waiting for purpose to arrive. Design experiments. Commit briefly. Reflect honestly. Meaning emerges from action and attention — not from contemplation alone."
+        : "Stop solving others' misalignments. Set frameworks. Let teams own decisions. Your job at this stage is to provide clarity — not resolution.",
+    },
+    {
+      icon:"◑",
+      title:"Exit from strength.",
+      desc: path === "Full Retirement"
+        ? "Retire because you've built enough — not because you're exhausted. Leave with pride, a financial plan, and a sense of purpose that waits on the other side."
+        : "Don't escape — design. Leave when you choose, not when forced. The quality of your exit shapes the quality of everything that follows.",
+    },
+  ];
+}
+
+function buildOutreachStrategy(postPath) {
+  const map = {
+    "Switch to Academia / Teaching": [
+      { step:"01", title:"Demonstrate First", desc:"Deliver a free guest lecture or workshop at a target institution. Don't pitch — let the quality of your thinking open the door." },
+      { step:"02", title:"Publish Your Perspective", desc:"Write one strong practitioner article or case study. This elevates you above typical applicants who have only academic credentials." },
+      { step:"03", title:"Propose a Module", desc:"Submit a structured 8–12 week course outline to a relevant institution. Solving a real curriculum gap is more powerful than any CV." },
+    ],
+    "Start own Business / Consulting": [
+      { step:"01", title:"Demonstrate Before You Pitch", desc:"Deliver a free diagnostic or workshop for a potential client. Let the output speak — relationships and revenue follow naturally from proven value." },
+      { step:"02", title:"Publish Your Methodology", desc:"Write a clear, opinionated piece about how you solve problems in your domain. Your thinking IS your product — show it publicly before anyone asks." },
+      { step:"03", title:"Propose a Pilot Project", desc:"Offer a low-risk, time-boxed engagement to your first 3 clients. A successful pilot creates case studies, referrals, and the confidence to scale." },
+    ],
+    "Freelance / Advisory roles": [
+      { step:"01", title:"Signal Your Availability", desc:"Update your LinkedIn and tell former colleagues you're open to advisory or board roles. Most opportunities at this level come through warm networks, not applications." },
+      { step:"02", title:"Define Your Advisory Thesis", desc:"Write a crisp 1-page document: what you bring, who you help, and how you engage. This becomes your handout in every conversation." },
+      { step:"03", title:"Close Your First Mandate", desc:"Offer a 90-day trial engagement at a reduced fee. A short, successful mandate creates the reference that opens the next door — and the one after that." },
+    ],
+    "NGO / Social Impact": [
+      { step:"01", title:"Volunteer Strategically", desc:"Offer your most valuable professional skill to one NGO pro-bono for 60 days. Deep engagement reveals culture, impact, and fit — better than any interview." },
+      { step:"02", title:"Build Your Impact Brief", desc:"Create a 1-page document mapping your professional experience to a social cause. Impact organisations respond to specificity and genuine commitment." },
+      { step:"03", title:"Propose a Programme", desc:"Pitch a specific initiative or project you could lead. Concrete proposals convert interest into roles — especially in resource-constrained NGOs." },
+    ],
+    "Creative Pursuits": [
+      { step:"01", title:"Create Consistently First", desc:"Share one piece of creative work per week without waiting for it to be perfect. Visibility compounds — your first 100 pieces will teach you more than any plan." },
+      { step:"02", title:"Build Your Audience", desc:"Choose one platform and go deep. Newsletter, Substack, Instagram, or YouTube. An engaged audience of 500 is worth more than 50,000 passive followers." },
+      { step:"03", title:"Monetise One Way", desc:"Identify the simplest path to your first paid creative income — a commission, a course, a print. Validate the model completely before trying to scale it." },
+    ],
+    "Full Retirement": [
+      { step:"01", title:"Identify Your Purpose Anchors", desc:"List 3 things that will give structure and meaning to your days — mentoring, volunteering, travel, a creative project. Retirement without purpose empties fast." },
+      { step:"02", title:"Validate Your Financial Floor", desc:"Confirm with a qualified advisor that your corpus, safe withdrawal rate, and passive income sustain your lifestyle for 25+ years across market scenarios." },
+      { step:"03", title:"Design Your First Year", desc:"Plan the first 12 months of retirement in detail — health, travel, social, hobbies. The transition shock is real; early structure prevents it from derailing you." },
+    ],
+    "Part-time flexible work": [
+      { step:"01", title:"Negotiate Before You Leave", desc:"The best flexible arrangement is often in your current organisation. Prepare a business case for part-time or remote — most employers prefer retaining experienced talent." },
+      { step:"02", title:"Build a Parallel Income Stream", desc:"Start one freelance or consulting project while still employed. Proof of concept before the leap dramatically reduces fear and financial risk." },
+      { step:"03", title:"Define Your Non-Negotiables", desc:"Set clear rules: which days you work, what you won't do, and your minimum income floor. Flexibility without boundaries quickly becomes drift." },
+    ],
+    "Not sure yet": [
+      { step:"01", title:"Run Experiments, Not Plans", desc:"Don't wait for clarity before acting. Run 3 small experiments — a conversation, a project, a workshop — and let the results guide you, not your assumptions." },
+      { step:"02", title:"Talk to People Who've Transitioned", desc:"Find 10 people who've made a career shift and ask: what surprised you most? Their answers will compress years of your own confusion into weeks." },
+      { step:"03", title:"Reduce Optionality Killers", desc:"Pay down debt, reduce fixed costs, and build savings. Not knowing your exact path is fine — running out of financial runway while you figure it out is not." },
+    ],
+  };
+  return map[postPath] || map["Not sure yet"];
+}
 const READINESS_DIMS = [
   { key:"financial", label:"Financial Clarity",   q:"How confident are you about your financial plan?" },
   { key:"direction", label:"Career Direction",     q:"How clear is your post-transition path?" },
@@ -345,6 +588,7 @@ function Onboarding({ onComplete, T }) {
   });
   const [touched, setTouched] = useState({});
   const [triedNext, setTriedNext] = useState(false);
+  const [selectedN, setSelectedN] = useState(null);
 
   const toggle = (field, val) => setForm(f=>({ ...f, [field]: f[field].includes(val) ? f[field].filter(x=>x!==val) : [...f[field], val] }));
   const yearsToTransition = form.transitionAge && form.age ? parseInt(form.transitionAge)-parseInt(form.age) : null;
@@ -364,7 +608,7 @@ function Onboarding({ onComplete, T }) {
         <nav style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, background:T.bgCard+"EE", backdropFilter:"blur(12px)", borderBottom:`1px solid ${T.border}`, padding:"0 48px", display:"flex", alignItems:"center", justifyContent:"space-between", height:64 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <div style={{ width:28, height:28, borderRadius:7, background:T.accent, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>🌿</div>
-            <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink }}>SecondInnings</div>
+            <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink }}>SecondInni<span style={{ color:T.red, fontStyle:"italic" }}>_</span>gs</div>
           </div>
           <div style={{ display:"flex", gap:4, alignItems:"center" }}>
             {[["Purpose","#purpose"],["Your Journey","#journey"],["Why It Matters","#why"],["Choose Your Path","#pricing"]].map(([label,href])=>(
@@ -386,7 +630,10 @@ function Onboarding({ onComplete, T }) {
           <div className="landing-left" style={{ flex:"0 0 58%", background:T.bg, display:"flex", flexDirection:"column", justifyContent:"center", padding:"60px 72px", position:"relative" }}>
             <div style={{ position:"absolute", top:36, left:72, display:"flex", alignItems:"center", gap:10 }}>
               <div style={{ width:32, height:32, borderRadius:8, background:T.accent, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>🌿</div>
-              <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:22, color:T.ink }}>SecondInnings</div>
+              <div>
+                <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:22, color:T.ink }}>SecondInni<span style={{ color:T.red, fontStyle:"italic" }}>_</span>gs</div>
+                <div style={{ fontSize:10, color:T.inkLight, fontStyle:"italic", letterSpacing:"0.04em", marginTop:1 }}>Yes — an N is missing. Come find yours. <a href="#find-the-n" style={{ color:T.accent, textDecoration:"none", fontWeight:700 }}>#FindTheN</a></div>
+              </div>
             </div>
             <div style={{ maxWidth:480 }}>
               <div style={{ display:"inline-block", fontSize:11, color:T.accent, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:20, background:T.accentLight, border:`1px solid ${T.accent}33`, borderRadius:20, padding:"5px 14px" }}>Life Design Portal</div>
@@ -576,6 +823,90 @@ function Onboarding({ onComplete, T }) {
           </div>
         </div>
 
+        {/* ── SECTION: #FIND THE N ──────────────────────────────────────────── */}
+        <div id="find-the-n" style={{ background:T.bg, padding:"90px 60px", borderTop:`1px solid ${T.border}` }}>
+          <div style={{ maxWidth:860, margin:"0 auto", textAlign:"center" }}>
+            <div style={{ display:"inline-block", fontSize:11, color:T.amber, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:20, background:T.amberLight, border:`1px solid ${T.amber}33`, borderRadius:20, padding:"5px 16px" }}>#FindTheN</div>
+
+            {/* URL visual */}
+            <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:44, color:T.ink, letterSpacing:"0.12em", margin:"0 0 6px" }}>
+              secondinni<span style={{ color:T.red, fontStyle:"italic", opacity:0.9 }}>_</span>gs.in
+            </div>
+            <div style={{ display:"flex", justifyContent:"center", gap:0, marginBottom:8 }}>
+              {"secondinnigs.in".split("").map((_, i) => {
+                const missing = i === 10; // the missing 'n' position (before 'g')
+                return (
+                  <div key={i} style={{ width:20, textAlign:"center", fontSize:9, color: missing ? T.red : T.inkLight, fontWeight: missing ? 700 : 400, letterSpacing:"0em" }}>
+                    {missing ? "↑" : ""}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ fontSize:13, color:T.inkLight, marginBottom:8, letterSpacing:"0.04em" }}>
+              "innings" has <strong style={{color:T.ink}}>3 N's</strong> · our URL has <strong style={{color:T.red}}>2</strong> · one is missing
+            </div>
+
+            <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:36, color:T.ink, margin:"28px 0 16px", lineHeight:1.2 }}>
+              That missing N is yours.<br/>
+              <span style={{ color:T.accent }}>What's the N you've been waiting for?</span>
+            </h2>
+            <p style={{ fontSize:15, color:T.inkMid, lineHeight:1.8, maxWidth:560, margin:"0 auto 36px" }}>
+              Pick the N-word that describes what's been missing from your life. Then share it — and start building it.
+            </p>
+
+            {/* N-word chips */}
+            <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap", marginBottom:40 }}>
+              {[
+                { word:"Now",           sub:"The time is now" },
+                { word:"Next",          sub:"My next chapter" },
+                { word:"New Start",     sub:"A clean slate" },
+                { word:"No Boss",       sub:"Full autonomy" },
+                { word:"Nomad Life",    sub:"Location freedom" },
+                { word:"Noble Purpose", sub:"Work that matters" },
+                { word:"No Regrets",    sub:"Live intentionally" },
+                { word:"Navigate",      sub:"Find my own way" },
+              ].map(({ word, sub }) => {
+                const active = selectedN === word;
+                return (
+                  <button key={word} onClick={() => setSelectedN(active ? null : word)} style={{ background: active ? T.amber+"22" : T.bgCard, border:`2px solid ${active ? T.amber : T.border}`, borderRadius:14, padding:"12px 22px", cursor:"pointer", fontFamily:"'Lato',sans-serif", textAlign:"left", transition:"all 0.18s", boxShadow: active ? `0 4px 20px ${T.amber}33` : "none" }}>
+                    <div style={{ fontSize:16, fontWeight:700, color: active ? T.amber : T.ink }}>
+                      <span style={{ color:T.amber }}>N</span>{word.slice(1)}
+                    </div>
+                    <div style={{ fontSize:10, color:T.inkLight, marginTop:3 }}>{sub}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Share card */}
+            {selectedN && (() => {
+              const tweetText = `I'm missing the N of "${selectedN}" — and I'm done waiting.\n\nStarting my second innings at secondinnigs.in\n\n#FindTheN #SecondInnigs`;
+              const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+              return (
+                <div style={{ background:T.bgCard, border:`2px solid ${T.amber}44`, borderRadius:22, padding:"40px 48px", maxWidth:520, margin:"0 auto", boxShadow:`0 12px 48px ${T.amber}22`, animation:"fadeUp 0.3s ease" }}>
+                  <div style={{ fontSize:11, color:T.amber, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:16 }}>#FindTheN</div>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:15, color:T.inkMid, marginBottom:6 }}>I'm missing the N of</div>
+                  <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, marginBottom:4, lineHeight:1.1 }}>
+                    <span style={{ color:T.amber }}>N</span>{selectedN.slice(1)}
+                  </div>
+                  <div style={{ fontSize:13, color:T.inkMid, marginBottom:24, fontStyle:"italic" }}>Starting my second innings — one N at a time.</div>
+                  <div style={{ fontFamily:"monospace", fontSize:20, color:T.ink, letterSpacing:"0.15em", marginBottom:28, background:T.bgMuted, borderRadius:10, padding:"12px 20px", display:"inline-block" }}>
+                    secondinni<span style={{ color:T.red, fontWeight:700, fontStyle:"italic" }}>_</span>gs.in
+                  </div>
+                  <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+                    <button onClick={() => window.open(tweetUrl, "_blank")} style={{ background:"#000", border:"none", borderRadius:10, padding:"12px 28px", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif", display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ fontSize:16 }}>𝕏</span> Share on X
+                    </button>
+                    <button onClick={() => setStarted(true)} style={{ background:T.accent, border:"none", borderRadius:10, padding:"12px 28px", color:T.dark?"#111":"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>
+                      Start Finding It →
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+
         {/* ── SECTION 4: MONETIZATION — HOW WE SUSTAIN THIS ─────────────────── */}
         <div id="pricing" style={{ background:T.bg, padding:"90px 60px" }}>
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
@@ -692,9 +1023,9 @@ function Onboarding({ onComplete, T }) {
           <div>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <div style={{ width:26, height:26, borderRadius:6, background:T.accent, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>🌿</div>
-              <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink }}>SecondInnings</div>
+              <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink }}>SecondInni<span style={{ color:T.red, fontStyle:"italic" }}>_</span>gs</div>
             </div>
-            <div style={{ fontSize:12, color:T.inkLight, marginTop:5 }}>Life Design Portal · secondinnings.in</div>
+            <div style={{ fontSize:12, color:T.inkLight, marginTop:5 }}>Life Design Portal · secondinnigs.in</div>
           </div>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
             {["Dashboard","Location Finder","Career Roadmap","Financial Runway","AI Coach","Decision Tool"].map(link=>(
@@ -705,7 +1036,7 @@ function Onboarding({ onComplete, T }) {
               </button>
             ))}
           </div>
-          <div style={{ fontSize:12, color:T.inkLight }}>© 2025 SecondInnings · Designed with care</div>
+          <div style={{ fontSize:12, color:T.inkLight }}>© 2025 SecondInnigs · Designed with care</div>
         </div>
 
         {/* ── Payment Modal ── */}
@@ -718,15 +1049,37 @@ function Onboarding({ onComplete, T }) {
                 <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:34, color:payPlan.color }}>{payPlan.price}</div>
                 <div style={{ fontSize:13, color:T.inkMid, marginTop:4 }}>{payPlan.period}</div>
               </div>
-              <div style={{ background:T.bgMuted, borderRadius:14, padding:20, marginBottom:16 }}>
+              {/* ── Payments Under Construction ── */}
+              <div style={{ background:T.amberLight, border:`2px solid ${T.amber}`, borderRadius:14, padding:"18px 20px", marginBottom:16 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                  <span style={{ fontSize:20 }}>🚧</span>
+                  <div style={{ fontSize:14, fontWeight:700, color:T.amber }}>Payments — Coming Soon</div>
+                </div>
+                <div style={{ fontSize:13, color:T.inkMid, lineHeight:1.7 }}>
+                  Our payment system is currently being set up. To join the Pro waitlist and be notified the moment it goes live, drop us a line and we'll reach out as soon as it's ready.
+                </div>
+                <button
+                  onClick={() => window.open("mailto:hello@secondinnigs.in?subject=SecondInnigs Pro Waitlist — Notify Me","_blank")}
+                  style={{ marginTop:14, background:T.amber, border:"none", borderRadius:8, padding:"10px 22px", color:T.dark?"#111":"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>
+                  Notify Me When Ready →
+                </button>
+              </div>
+              <div style={{ background:T.bgMuted, borderRadius:14, padding:20, marginBottom:16, position:"relative", overflow:"hidden" }}>
+                <div style={{ position:"absolute", inset:0, background:T.bgCard+"CC", backdropFilter:"blur(3px)", zIndex:1, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:14 }}>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:28, marginBottom:8 }}>🔒</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:T.inkMid }}>Payment details masked</div>
+                    <div style={{ fontSize:11, color:T.inkLight, marginTop:4 }}>Available once payments go live</div>
+                  </div>
+                </div>
                 <div style={{ fontWeight:700, color:T.ink, marginBottom:12, fontSize:14 }}>Pay via UPI or Bank Transfer</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:10, filter:"blur(4px)", userSelect:"none" }}>
                   <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:10, padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
                     <span style={{ fontSize:22, flexShrink:0 }}>📱</span>
                     <div>
                       <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>UPI Payment</div>
-                      <div style={{ fontSize:12, color:T.inkMid, marginTop:2 }}>UPI ID: <strong style={{color:T.accent, userSelect:"all"}}>secondinnings@upi</strong></div>
-                      <div style={{ fontSize:11, color:T.inkLight, marginTop:2 }}>GPay · PhonePe · Paytm · BHIM — any UPI app works</div>
+                      <div style={{ fontSize:12, color:T.inkMid, marginTop:2 }}>UPI ID: <strong>██████████@upi</strong></div>
+                      <div style={{ fontSize:11, color:T.inkLight, marginTop:2 }}>GPay · PhonePe · Paytm · BHIM</div>
                     </div>
                   </div>
                   <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:10, padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
@@ -734,21 +1087,16 @@ function Onboarding({ onComplete, T }) {
                     <div>
                       <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>Debit / Credit Card</div>
                       <div style={{ fontSize:12, color:T.inkMid, marginTop:2 }}>Razorpay secure checkout — Visa, Mastercard, RuPay</div>
-                      <div style={{ fontSize:11, color:T.inkLight, marginTop:2 }}>Card checkout coming soon · UPI available now</div>
                     </div>
                   </div>
                   <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:10, padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
                     <span style={{ fontSize:22, flexShrink:0 }}>✉️</span>
                     <div>
                       <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>Net Banking / NEFT</div>
-                      <div style={{ fontSize:12, color:T.inkMid, marginTop:2 }}>Email <strong style={{color:T.accent}}>pay@secondinnings.in</strong> for bank details</div>
-                      <div style={{ fontSize:11, color:T.inkLight, marginTop:2 }}>Details sent within 24 hours</div>
+                      <div style={{ fontSize:12, color:T.inkMid, marginTop:2 }}>Email <strong>██████@secondinnigs.in</strong> for bank details</div>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div style={{ background:T.amberLight, border:`1px solid ${T.amber}44`, borderRadius:10, padding:"11px 16px", marginBottom:20, fontSize:12, color:T.inkMid, lineHeight:1.6 }}>
-                <strong style={{color:T.amber}}>How to activate: </strong>After paying, email your transaction ID to <strong style={{color:T.ink}}>pay@secondinnings.in</strong> — your plan will be activated within 24 hours.
               </div>
               <div style={{ display:"flex", gap:12 }}>
                 <button onClick={()=>setShowPayModal(false)} style={{ flex:1, background:"transparent", border:`1.5px solid ${T.border}`, borderRadius:10, padding:"12px 20px", color:T.inkMid, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>
@@ -770,7 +1118,7 @@ function Onboarding({ onComplete, T }) {
   return (
     <div style={{ minHeight:"100vh", background:T.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
       <div style={{ textAlign:"center", marginBottom:40 }}>
-        <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:30, color:T.ink }}>SecondInnings</div>
+        <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:30, color:T.ink }}>SecondInni<span style={{ color:T.red, fontStyle:"italic" }}>_</span>gs</div>
         <div style={{ fontSize:11, color:T.inkLight, letterSpacing:"0.15em", textTransform:"uppercase", marginTop:5 }}>Design Your Next Chapter</div>
       </div>
       <div style={{ display:"flex", gap:8, marginBottom:32 }}>
@@ -998,6 +1346,80 @@ function Onboarding({ onComplete, T }) {
   );
 }
 
+// ── Subscription Modal ────────────────────────────────────────────────────────
+function SubscriptionModal({ user, onClose, googleBtnRef, T }) {
+  const PLANS = [
+    {
+      id:"guest", name:"Guest", price:"Free", sub:"No sign-in needed",
+      color:T.inkMid,
+      features:["Full life design portal","AI location finder","Career roadmap","Financial runway calculator","AI Coach (standard)","Session only — resets on refresh"],
+      cta:"Current", ctaDisabled:true,
+    },
+    {
+      id:"starter", name:"Starter", price:"Free", sub:"Sign in with Google",
+      color:T.accent,
+      features:["Everything in Guest","Profile saved across sessions","Readiness log persisted","Name personalisation throughout","AI Coach — extended context"],
+      cta: user ? "Active" : null, // null = render Google button
+      ctaDisabled: !!user,
+      highlight: !user,
+    },
+    {
+      id:"pro", name:"Pro", price:"₹499/mo", sub:"or ₹3,999/year · save 33%",
+      color:T.amber,
+      badge:"Best Value",
+      features:["Everything in Starter","Unlimited AI coaching depth","PDF life plan export (branded)","Advanced roadmap templates","Email progress reminders","Multi-device sync"],
+      cta:"Join Waitlist", ctaDisabled:false, waitlist:true,
+    },
+  ];
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(2px)" }}/>
+      <div style={{ position:"relative", width:"min(860px,95vw)", background:T.bgCard, borderRadius:20, border:`1px solid ${T.border}`, boxShadow:"0 24px 80px rgba(0,0,0,0.4)", padding:"36px 32px", maxHeight:"90vh", overflowY:"auto" }}>
+        <button onClick={onClose} style={{ position:"absolute", top:16, right:18, background:"transparent", border:`1px solid ${T.border}`, borderRadius:8, padding:"5px 12px", color:T.inkMid, cursor:"pointer", fontSize:13 }}>✕</button>
+        <div style={{ textAlign:"center", marginBottom:32 }}>
+          <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:26, color:T.ink, marginBottom:6 }}>Choose your plan</div>
+          <div style={{ fontSize:13, color:T.inkMid }}>Start free. Upgrade when you're ready to go deeper.</div>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
+          {PLANS.map(p=>(
+            <div key={p.id} style={{ background:T.bgMuted, borderRadius:16, padding:24, border:`2px solid ${p.highlight?p.color:T.border}`, position:"relative", display:"flex", flexDirection:"column" }}>
+              {p.badge && (
+                <div style={{ position:"absolute", top:-12, left:"50%", transform:"translateX(-50%)", background:p.color, color:T.dark?"#111":"#fff", fontSize:10, fontWeight:700, padding:"3px 14px", borderRadius:20, letterSpacing:"0.08em", whiteSpace:"nowrap" }}>{p.badge}</div>
+              )}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink }}>{p.name}</div>
+                <div style={{ fontSize:24, color:p.color, fontWeight:700, margin:"6px 0 2px" }}>{p.price}</div>
+                <div style={{ fontSize:11, color:T.inkLight }}>{p.sub}</div>
+              </div>
+              <ul style={{ listStyle:"none", padding:0, margin:"0 0 20px", flex:1 }}>
+                {p.features.map((f,i)=>(
+                  <li key={i} style={{ display:"flex", gap:8, alignItems:"flex-start", fontSize:12, color:T.inkMid, padding:"5px 0", borderBottom:i<p.features.length-1?`1px solid ${T.border}`:"none" }}>
+                    <span style={{ color:p.color, flexShrink:0, marginTop:1 }}>✓</span>{f}
+                  </li>
+                ))}
+              </ul>
+              {/* CTA */}
+              {p.cta && (
+                <button
+                  disabled={p.ctaDisabled}
+                  onClick={p.waitlist ? ()=>window.open("mailto:hello@secondinnigs.in?subject=SecondInnigs Pro Waitlist","_blank") : undefined}
+                  style={{ width:"100%", padding:"11px 0", borderRadius:10, border:`1.5px solid ${p.ctaDisabled?T.border:p.color}`, background:p.ctaDisabled?"transparent":p.color, color:p.ctaDisabled?T.inkLight:T.dark?"#111":"#fff", fontSize:13, fontWeight:700, cursor:p.ctaDisabled?"default":"pointer", fontFamily:"'Lato',sans-serif" }}>
+                  {p.cta}
+                </button>
+              )}
+              {/* Google Sign-In button slot for Starter when not logged in */}
+              {!p.cta && !user && (
+                <div ref={googleBtnRef} style={{ width:"100%", minHeight:44, display:"flex", alignItems:"center", justifyContent:"center" }}/>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign:"center", marginTop:20, fontSize:11, color:T.inkLight }}>No credit card required for Starter · Cancel Pro anytime · Your data stays private</div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [themeId, setThemeId] = useState("warm-ivory");
@@ -1005,7 +1427,7 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [tab, setTab] = useState("dashboard");
   const [fin, setFin] = useState({ income:150000, expenses:65000, savings:800000, targetYears:5 });
-  const [readinessLog, setReadinessLog] = useState([{ week:"Wk 1",financial:5,direction:5,energy:7,family:7,progress:5 },{ week:"Wk 2",financial:6,direction:5,energy:7,family:7,progress:6 },{ week:"Wk 3",financial:6,direction:6,energy:6,family:8,progress:6 },{ week:"Wk 4",financial:7,direction:6,energy:8,family:8,progress:7 },{ week:"Wk 5",financial:7,direction:7,energy:8,family:8,progress:7 },{ week:"Wk 6",financial:8,direction:7,energy:8,family:9,progress:8 }]);
+  const [readinessLog, setReadinessLog] = useState([]);
   const [newReadiness, setNewReadiness] = useState({ financial:6, direction:6, energy:7, family:7, progress:6 });
   const [selLoc, setSelLoc] = useState([]);
   const [locFilter, setLocFilter] = useState("All");
@@ -1020,9 +1442,67 @@ export default function App() {
   const [chatIn, setChatIn] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [user, setUser] = useState(null);
+  const [showSubModal, setShowSubModal] = useState(false);
   const chatRef = useRef(null);
+  const googleBtnRef = useRef(null);
 
   const T = THEMES[themeId];
+
+  // ── Google OAuth init ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      window.google?.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (response) => {
+          const info = parseGoogleJwt(response.credential);
+          if (!info) return;
+          const newUser = { name: info.name, email: info.email, picture: info.picture };
+          setUser(newUser);
+          try { localStorage.setItem("si_user", JSON.stringify(newUser)); } catch {}
+          setShowSubModal(false);
+        },
+        auto_select: false,
+      });
+    };
+    document.head.appendChild(script);
+    return () => { try { document.head.removeChild(script); } catch {} };
+  }, []);
+
+  // Render Google button whenever the modal slot mounts
+  useEffect(() => {
+    if (!showSubModal || !googleBtnRef.current || !window.google?.accounts?.id) return;
+    const timer = setTimeout(() => {
+      if (googleBtnRef.current) {
+        window.google.accounts.id.renderButton(googleBtnRef.current, {
+          theme: T.dark ? "filled_black" : "outline",
+          size: "large", text: "signin_with", shape: "rectangular",
+          width: googleBtnRef.current.offsetWidth || 220,
+        });
+      }
+    }, 80); // small delay to ensure DOM is ready
+    return () => clearTimeout(timer);
+  }, [showSubModal, T.dark]);
+
+  // ── Restore profile from localStorage for logged-in users ──────────────────
+  useEffect(() => {
+    try {
+      const savedUser = JSON.parse(localStorage.getItem("si_user"));
+      const savedProfile = JSON.parse(localStorage.getItem("si_profile"));
+      if (savedUser && savedProfile && !profile) {
+        setUser(savedUser);
+        setProfile(savedProfile);
+        const yl = savedProfile.transitionAge && savedProfile.age
+          ? parseInt(savedProfile.transitionAge) - parseInt(savedProfile.age) : null;
+        setChatMsgs([{ role:"assistant", content:`Welcome back${savedProfile.name?`, ${savedProfile.name}`:""}. Good to see you again.\n\nYou're ${yl?`${yl} year${yl===1?"":"s"} away from`:"working toward"} your transition at age ${savedProfile.transitionAge||"your target"} from ${savedProfile.profession||"your current role"}.\n\nWhat would you like to work on today?` }]);
+      }
+    } catch {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const latestReadiness = readinessLog[readinessLog.length - 1] || { financial:0, direction:0, energy:0, family:0, progress:0 };
   const overallReadiness = ((latestReadiness.financial + latestReadiness.direction + latestReadiness.energy + latestReadiness.family + latestReadiness.progress) / 5).toFixed(1);
@@ -1038,15 +1518,23 @@ export default function App() {
   const sTag = (color=T.accent) => ({ background:color+"18", border:`1px solid ${color+"44"}`, borderRadius:20, padding:"3px 10px", fontSize:11, color, fontWeight:600 });
   const navBtn = (active) => ({ background:active?T.accentLight:"transparent", border:`1.5px solid ${active?T.accent:"transparent"}`, borderRadius:8, padding:"8px 16px", color:active?T.accent:T.inkMid, fontSize:12, fontWeight:active?700:400, cursor:"pointer", whiteSpace:"nowrap", fontFamily:"'Lato',sans-serif", transition:"all 0.15s" });
 
+  const signOut = () => {
+    window.google?.accounts.id.disableAutoSelect();
+    setUser(null);
+    try { localStorage.removeItem("si_user"); localStorage.removeItem("si_profile"); } catch {}
+  };
+
   const onboard = (form) => {
     setProfile(form);
+    // Persist profile for logged-in users so it survives page refresh
+    if (user) { try { localStorage.setItem("si_profile", JSON.stringify(form)); } catch {} }
     // AI locations will be fetched on demand in the location tab
     setSelLoc([]);
     const yearsLeft = form.transitionAge && form.age ? parseInt(form.transitionAge)-parseInt(form.age) : null;
     const familyCtx = form.dependents && form.dependents !== "None — just me"
       ? `I also see you're navigating this with ${form.dependents.toLowerCase()} — that's an important part of your plan.`
       : "";
-    const greeting = `Welcome${form.name?`, ${form.name}`:""}. I'm your SecondInnings Life Coach.\n\nYou're ${form.age}, working in ${form.profession||"your field"}, aiming to transition around age ${form.transitionAge||"your target"}. That gives you ${yearsLeft||"several"} year${yearsLeft===1?"":"s"} of runway. ${familyCtx}\n\nLet me start with one question:\n\n${form.stressDrivers.length>0?`You flagged "${form.stressDrivers[0]}" as a key stress driver. If that pressure disappeared tomorrow — would you still want to transition, or is it partly what's pushing you?`:"If your work environment became ideal tomorrow — would you still want to transition, or is something specific driving the urge?"}`;
+    const greeting = `Welcome${form.name?`, ${form.name}`:""}. I'm your SecondInnigs Life Coach.\n\nYou're ${form.age}, working in ${form.profession||"your field"}, aiming to transition around age ${form.transitionAge||"your target"}. That gives you ${yearsLeft||"several"} year${yearsLeft===1?"":"s"} of runway. ${familyCtx}\n\nLet me start with one question:\n\n${form.stressDrivers.length>0?`You flagged "${form.stressDrivers[0]}" as a key stress driver. If that pressure disappeared tomorrow — would you still want to transition, or is it partly what's pushing you?`:"If your work environment became ideal tomorrow — would you still want to transition, or is something specific driving the urge?"}`;
     setChatMsgs([{ role:"assistant", content:greeting }]);
   };
 
@@ -1054,7 +1542,7 @@ export default function App() {
     setProfile(null);
     setTab("dashboard");
     setFin({ income:150000, expenses:65000, savings:800000, targetYears:5 });
-    setReadinessLog([{ week:"Wk 1",financial:5,direction:5,energy:7,family:7,progress:5 },{ week:"Wk 2",financial:6,direction:5,energy:7,family:7,progress:6 },{ week:"Wk 3",financial:6,direction:6,energy:6,family:8,progress:6 },{ week:"Wk 4",financial:7,direction:6,energy:8,family:8,progress:7 },{ week:"Wk 5",financial:7,direction:7,energy:8,family:8,progress:7 },{ week:"Wk 6",financial:8,direction:7,energy:8,family:9,progress:8 }]);
+    setReadinessLog([]);
     setNewReadiness({ financial:6, direction:6, energy:7, family:7, progress:6 });
     setSelLoc([]); setLocFilter("All");
     setAiLocs([]); setAiLocsLoading(false); setAiLocsError(null); setAiLocsSearched(false);
@@ -1068,11 +1556,11 @@ export default function App() {
     const win = window.open('', '_blank');
     if (!win) return;
     const safeName = escapeHtml(profile?.name);
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>SecondInnings — Life Plan${safeName?` · ${safeName}`:""}</title>
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>SecondInnigs — Life Plan${safeName?` · ${safeName}`:""}</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Lato:wght@400;700&display=swap" rel="stylesheet"/>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Lato',sans-serif;max-width:800px;margin:40px auto;padding:0 28px;color:#1C3A2E;background:#fff;line-height:1.6}h2{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;border-bottom:1px solid #E2DAD0;padding-bottom:8px;margin:30px 0 14px}.hdr{text-align:center;padding:28px 0;border-bottom:2px solid #5C8A6E;margin-bottom:8px}.brand{font-family:'DM Serif Display',serif;font-size:30px}.meta{font-size:11px;color:#8BA396;margin-top:6px;letter-spacing:0.08em}.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}.card{background:#F7F3EE;border-radius:8px;padding:12px 14px;border:1px solid #E2DAD0}.lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#8BA396;font-weight:700}.val{font-size:22px;color:#5C8A6E;font-family:'DM Serif Display',serif;margin-top:3px}.val.sm{font-size:15px;font-family:'Lato',sans-serif;font-weight:700}.tag{display:inline-block;background:#EBF3EF;color:#5C8A6E;border:1px solid rgba(92,138,110,0.2);padding:3px 11px;border-radius:20px;font-size:11px;margin:2px;font-weight:600}.tag.s{background:#FDECEA;color:#C0564A;border-color:rgba(192,86,74,0.2)}.track{border-left:3px solid #5C8A6E;padding:11px 14px;margin:8px 0;background:#F7F3EE;border-radius:0 8px 8px 0}.tt{font-weight:700;font-size:14px}.td{font-size:12px;color:#4A6358;margin-top:3px}.footer{margin-top:40px;padding-top:14px;border-top:1px solid #E2DAD0;font-size:11px;color:#8BA396;text-align:center}.btn{display:block;margin:20px auto 0;padding:11px 28px;background:#5C8A6E;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif}@media print{.btn{display:none}}</style>
 </head><body>
-<div class="hdr"><div class="brand">SecondInnings</div><div class="meta">Personal Life Plan · ${new Date().toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})}${safeName?` · ${safeName}`:""}</div></div>
+<div class="hdr"><div class="brand">SecondInnigs</div><div class="meta">Personal Life Plan · ${new Date().toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})}${safeName?` · ${safeName}`:""}</div></div>
 <h2>Profile</h2>
 <div class="g3"><div class="card"><div class="lbl">Current Age</div><div class="val">${profile?.age||"—"}</div></div><div class="card"><div class="lbl">Target Transition</div><div class="val">Age ${profile?.transitionAge||"—"}</div></div><div class="card"><div class="lbl">Runway Left</div><div class="val">${yearsLeft} yrs</div></div></div>
 <div class="g2"><div class="card"><div class="lbl">Profession</div><div class="val sm">${profile?.profession||"—"}</div></div><div class="card"><div class="lbl">Post-Career Path</div><div class="val sm">${profile?.postPath||"—"}</div></div></div>
@@ -1088,7 +1576,7 @@ ${sortedLocs.length>0?`<h2>Top Location Matches</h2><div class="g3">${sortedLocs
 <h2>Readiness Check — Latest</h2>
 <div class="g3">${READINESS_DIMS.map(d=>`<div class="card"><div class="lbl">${d.label}</div><div class="val">${latestReadiness[d.key]}<span style="font-size:14px">/10</span></div></div>`).join("")}<div class="card"><div class="lbl">Overall</div><div class="val">${overallReadiness}<span style="font-size:14px">/10</span></div></div></div>
 <button class="btn" onclick="window.print()">⬇ Save as PDF / Print</button>
-<div class="footer">SecondInnings · secondinnings.in · For personal planning purposes only. Not financial, legal, or professional advice.</div>
+<div class="footer">SecondInnigs · secondinnigs.in · For personal planning purposes only. Not financial, legal, or professional advice.</div>
 </body></html>`);
     win.document.close();
     win.focus();
@@ -1199,18 +1687,8 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
   const { monthlySave, targetCorpus, progress, monthsLeft } = calcFinancials(fin.income, fin.expenses, fin.savings, fin.targetYears);
   const tracks = TRANSITION_TRACKS[profile?.profession] || TRANSITION_TRACKS["Other Professional"];
   const yearsLeft = profile?.transitionAge && profile?.age ? parseInt(profile.transitionAge) - parseInt(profile.age) : 8;
-  const careerSteps = [
-    { phase:`Now – ${Math.max(1,yearsLeft-4)}y`, title:"Reposition & Rebrand", tasks:["Reframe professional identity externally","Start writing / speaking in your domain","Deliver 3–5 guest sessions or workshops","Build a signature topic or framework"] },
-    { phase:`${Math.max(1,yearsLeft-4)}y – ${Math.max(2,yearsLeft-2)}y`, title:"Build Credibility", tasks:["Publish 2–3 thought papers or articles","Speak at a relevant conference","Join one advisory or board-level role","Develop a signature program or course"] },
-    { phase:`${Math.max(2,yearsLeft-2)}y – ${Math.max(3,yearsLeft-1)}y`, title:"Formal Alignment", tasks:["Identify 3 target organisations / institutions","Submit a structured proposal or pilot","Explore contractual / flexible arrangements","Test income optionality (first small retainer)"] },
-    { phase:`${Math.max(3,yearsLeft-1)}y – Transition`, title:"Pilot & Validate", tasks:["Run a part-time trial of new role","Validate lifestyle fit and energy levels","Adjust financial model based on new income","Prepare for full transition logistics"] },
-  ];
-  const yT1 = yearsLeft >= 6 ? 5 : Math.max(1, Math.floor(yearsLeft * 0.65));
-  const yT2 = Math.max(1, Math.min(Math.round(yearsLeft * 0.3), yT1 - 1));
-  const dynamicPhases = GENERIC_PHASES.map((p,i) => ({
-    ...p,
-    label: ["Now – T-"+yT1, "T-"+yT1+" – T-"+yT2, "T-"+yT2+" – T", "T onwards"][i],
-  }));
+  const careerSteps = buildCareerSteps(profile?.profession, profile?.postPath, yearsLeft);
+  const dynamicPhases = buildTimelinePhases(profile?.postPath, profile?.stressDrivers, yearsLeft);
 
   const totalTasks = careerSteps.length * 4;
   const doneTasks = Object.values(careerChecks).filter(Boolean).length;
@@ -1242,17 +1720,18 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
       <style>{`*{box-sizing:border-box} input[type=range]{accent-color:${T.accent}} @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}} .fade{animation:fadeUp 0.35s ease forwards} @keyframes dot{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}} @media(max-width:900px){.g4{grid-template-columns:1fr 1fr!important}.g3{grid-template-columns:1fr 1fr!important}.g2-fin{grid-template-columns:1fr!important}.hdr-info{display:none!important}.hdr-actions{gap:8px!important}} @media(max-width:600px){.g4{grid-template-columns:1fr!important}.g3{grid-template-columns:1fr!important}.g2{grid-template-columns:1fr!important}.mob-stack{flex-direction:column!important}.mob-pad{padding:16px 14px!important}.landing-right{display:none!important}.landing-left{flex:unset!important;width:100%!important;padding:40px 24px!important}.landing-h1{font-size:34px!important}.tab-bar{gap:2px!important}.tab-bar button{padding:6px 10px!important;font-size:11px!important}}`}</style>
 
       {showThemes && <ThemePanel current={themeId} onSelect={id=>{setThemeId(id)}} onClose={()=>setShowThemes(false)} T={T}/>}
+      {showSubModal && <SubscriptionModal user={user} onClose={()=>setShowSubModal(false)} googleBtnRef={googleBtnRef} T={T}/>}
 
       {/* Header */}
       <div style={{ background:T.bgCard, borderBottom:`1px solid ${T.border}`, position:"sticky", top:0, zIndex:200, boxShadow:T.shadow }}>
         <div style={{ padding:"0 28px" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", height:58 }}>
             <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-              <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:21, color:T.ink }}>SecondInnings</div>
+              <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:21, color:T.ink }}>SecondInni<span style={{ color:T.red, fontStyle:"italic" }}>_</span>gs</div>
               <div style={{ width:1, height:24, background:T.border }}/>
               <div className="hdr-info" style={{ fontSize:13, color:T.inkMid }}>{profile.name||"Your"} · {profile.profession} · Age {profile.age} → {profile.transitionAge}</div>
             </div>
-            <div style={{ display:"flex", gap:12, alignItems:"center" }}>
+            <div className="hdr-actions" style={{ display:"flex", gap:10, alignItems:"center" }}>
               <div style={{ textAlign:"right" }}>
                 <div style={sLabel}>Roadmap</div>
                 <div style={{ fontSize:13, color:T.accent, fontWeight:700 }}>{careerPct}% done</div>
@@ -1266,7 +1745,26 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 <div style={{ width:10, height:10, borderRadius:"50%", background:T.amber }}/>
                 Theme
               </button>
-              <button style={{ ...sBtn("ghost"), fontSize:11, padding:"6px 12px" }} onClick={()=>setShowResetConfirm(true)}>↺ Re-do Profile</button>
+              {/* User / login area */}
+              {user ? (
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  {user.picture
+                    ? <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" style={{ width:30, height:30, borderRadius:"50%", border:`2px solid ${T.accent}` }}/>
+                    : <div style={{ width:30, height:30, borderRadius:"50%", background:T.accentLight, border:`2px solid ${T.accent}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:T.accent }}>{user.name?.[0]}</div>
+                  }
+                  <div style={{ lineHeight:1.3 }}>
+                    <div style={{ fontSize:12, color:T.ink, fontWeight:700, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.name?.split(" ")[0]}</div>
+                    <button onClick={signOut} style={{ fontSize:10, color:T.inkLight, background:"none", border:"none", cursor:"pointer", padding:0, fontFamily:"'Lato',sans-serif" }}>Sign out</button>
+                  </div>
+                  <button onClick={()=>setShowSubModal(true)} style={{ background:T.amberLight, border:`1px solid ${T.amber}44`, borderRadius:8, padding:"5px 12px", color:T.amber, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>★ Pro</button>
+                </div>
+              ) : (
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>setShowSubModal(true)} style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:8, padding:"7px 14px", color:T.inkMid, fontSize:12, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>Sign In</button>
+                  <button onClick={()=>setShowSubModal(true)} style={{ background:T.accent, border:`1px solid ${T.accent}`, borderRadius:8, padding:"7px 14px", color:T.dark?"#111":"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>↑ Upgrade</button>
+                </div>
+              )}
+              <button style={{ ...sBtn("ghost"), fontSize:11, padding:"6px 12px" }} onClick={()=>setShowResetConfirm(true)}>↺ Re-do</button>
             </div>
           </div>
           <div className="tab-bar" style={{ display:"flex", gap:4, paddingBottom:10, overflowX:"auto" }}>
@@ -1624,14 +2122,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
             <div style={card}>
               <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:19, color:T.ink, marginBottom:20 }}>Core Operating Principles</div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
-                {[
-                  { icon:"◆", title:"Contribute. Don't carry.", desc:"Give structured input. Detach from outcome ownership. Outcome belongs to the system — input quality belongs to you." },
-                  { icon:"◈", title:"The Transition Age Test", desc:`Before any major decision: "Will this serve my future self at ${profile.transitionAge||"my target age"}?" If not — reduce investment.` },
-                  { icon:"◎", title:"Build portable identity.", desc:"Writing, speaking, advising. Your reputation must outlive your employer." },
-                  { icon:"◉", title:"Energy over income.", desc:"From mid-transition, cognitive energy is your scarcest asset. Protect it ruthlessly." },
-                  { icon:"◐", title:"Criteria over arbitration.", desc:"Stop solving others' misalignments. Set frameworks. Let teams own decisions." },
-                  { icon:"◑", title:"Exit from strength.", desc:"Don't escape — design. Leave when you choose, not when forced." },
-                ].map(pr=>(
+                {buildPrinciples(profile).map(pr=>(
                   <div key={pr.title} style={{ background:T.bgMuted, borderRadius:10, padding:16, border:`1px solid ${T.border}` }}>
                     <div style={{ fontSize:20, color:T.accent, marginBottom:6 }}>{pr.icon}</div>
                     <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:14, color:T.ink, marginBottom:6 }}>{pr.title}</div>
@@ -1772,18 +2263,29 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 </div>
                 <div style={card}>
                   <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:15, color:T.ink, marginBottom:12 }}>Recent Entries</div>
-                  {readinessLog.slice(-5).reverse().map((w,i)=>{
-                    const avg = ((w.financial+w.direction+w.energy+w.family+w.progress)/5).toFixed(1);
-                    return (
-                      <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${T.border}` }}>
-                        <span style={{ fontSize:13, color:T.inkMid }}>{w.week}</span>
-                        <span style={{ fontSize:13, color:T.accent, fontWeight:700 }}>{avg}/10</span>
-                      </div>
-                    );
-                  })}
+                  {readinessLog.length === 0
+                    ? <div style={{ fontSize:12, color:T.inkLight, textAlign:"center", padding:"16px 0" }}>No entries yet — log your first week above.</div>
+                    : readinessLog.slice(-5).reverse().map((w,i)=>{
+                        const avg = ((w.financial+w.direction+w.energy+w.family+w.progress)/5).toFixed(1);
+                        return (
+                          <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${T.border}` }}>
+                            <span style={{ fontSize:13, color:T.inkMid }}>{w.week}</span>
+                            <span style={{ fontSize:13, color:T.accent, fontWeight:700 }}>{avg}/10</span>
+                          </div>
+                        );
+                      })
+                  }
                 </div>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+                {readinessLog.length === 0 && (
+                  <div style={{ ...card, textAlign:"center", padding:48 }}>
+                    <div style={{ fontSize:40, marginBottom:16 }}>◐</div>
+                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink, marginBottom:10 }}>Log your first week</div>
+                    <p style={{ fontSize:13, color:T.inkMid, maxWidth:320, margin:"0 auto" }}>Use the sliders on the left to rate each dimension and click <strong style={{color:T.ink}}>Save Entry</strong>. Your readiness chart and trend will appear here as you build up your log week by week.</p>
+                  </div>
+                )}
+                {readinessLog.length > 0 && (<>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
                   {[
                     { label:"Overall Readiness", value:`${overallReadiness}/10`, color:T.accent, sub:"Composite score" },
@@ -1832,6 +2334,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                     <span><span style={{ color:T.red+"88" }}>■</span> Needs work (&lt;5)</span>
                   </div>
                 </div>
+              </>)}
               </div>
             </div>
           </div>
@@ -1857,7 +2360,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
             <div style={card}>
               <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:19, color:T.ink, marginBottom:20 }}>3-Step Outreach Strategy</div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                {[{ step:"01",title:"Demonstrate First",desc:"Start with a free workshop or guest session. Don't pitch — let the quality of your thinking open the door." },{ step:"02",title:"Publish Your Thinking",desc:"Write one strong position paper in your domain. This elevates you above typical candidates immediately." },{ step:"03",title:"Propose a Module",desc:"Submit a structured 8–12 week course outline. Solving a real curriculum gap is more powerful than any CV." }].map(s2=>(
+                {buildOutreachStrategy(profile?.postPath).map(s2=>(
                   <div key={s2.step} style={{ background:T.bgMuted, borderRadius:12, padding:20, border:`1px solid ${T.border}` }}>
                     <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:36, color:T.border, marginBottom:8 }}>{s2.step}</div>
                     <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:15, color:T.ink, marginBottom:8 }}>{s2.title}</div>
@@ -1980,7 +2483,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
           {/* Top row — brand + nav links */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:24, marginBottom:28 }}>
             <div style={{ maxWidth:340 }}>
-              <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:22, color:T.ink, marginBottom:8 }}>SecondInnings</div>
+              <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:22, color:T.ink, marginBottom:8 }}>SecondInni<span style={{ color:T.red, fontStyle:"italic" }}>_</span>gs</div>
               <div style={{ fontSize:12, color:T.inkMid, lineHeight:1.8 }}>
                 A personal life design portal for professionals planning their career transition or second innings. Built to help you think clearly — not to think for you.
               </div>
@@ -2018,7 +2521,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 { icon:"⚖", title:"Not Legal or Immigration Advice", text:"City recommendations, visa mentions, and relocation suggestions are general and may be outdated. Immigration rules, tax treaties, and residency requirements vary and change frequently. Always verify with an immigration lawyer or official government sources before relocating." },
                 { icon:"📊", title:"Data Accuracy", text:"City scores, quality-of-life ratings, and comparisons are AI-estimated and may not reflect current conditions. Cost of living, healthcare quality, and infrastructure can change. Independently verify all location data before making relocation decisions." },
                 { icon:"🔒", title:"Your Data & Privacy", text:"We do not create accounts or store your profile in a database. Your planning data lives in this browser session only. When you use the AI Coach or AI-powered location search, your messages are sent to Anthropic's API via our server to generate responses, but we do not log or persist them. Please treat this like any online tool and avoid sharing highly sensitive personal, financial, or medical information." },
-                { icon:"(c)", title:"Intellectual Property", text:"SecondInnings is an independent tool. City names, country names, and geographic references are factual identifiers. All original content, UI design, and branding on this platform are copyright 2026 SecondInnings. AI-generated coaching responses and recommendations are produced dynamically and are not owned or endorsed by Anthropic." },
+                { icon:"(c)", title:"Intellectual Property", text:"SecondInnigs is an independent tool. City names, country names, and geographic references are factual identifiers. All original content, UI design, and branding on this platform are copyright 2026 SecondInnigs. AI-generated coaching responses and recommendations are produced dynamically and are not owned or endorsed by Anthropic." },
               ].map(d=>(
                 <div key={d.icon} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
                   <span style={{ fontSize:13, flexShrink:0, marginTop:1 }}>{d.icon}</span>
@@ -2033,7 +2536,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
           {/* Bottom bar */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12 }}>
             <div style={{ fontSize:11, color:T.inkLight }}>
-              © 2026 SecondInnings · secondinnings.in · All rights reserved
+              © 2026 SecondInnigs · secondinnigs.in · All rights reserved
             </div>
             <div style={{ display:"flex", gap:16, flexWrap:"wrap" }}>
               {[
