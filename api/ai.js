@@ -7,6 +7,7 @@
  * in DevTools network traffic.
  *
  * Protections:
+ *  - Rate limiting: 20 requests / minute per IP via Upstash Redis (sliding window)
  *  - CORS: only allows requests from the production domain + localhost dev
  *  - Method guard: POST only
  *  - Request body validation: messages array, role/content checks
@@ -15,6 +16,9 @@
  *  - Key never sent to the client
  */
 
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+
 const ALLOWED_ORIGINS = [
   "https://secondinnings.in",
   "https://www.secondinnings.in",
@@ -22,13 +26,34 @@ const ALLOWED_ORIGINS = [
   "http://localhost:4173",
 ];
 
-// Add dynamic Vercel preview URLs (process.env.VERCEL_URL is set automatically)
 function isAllowedOrigin(origin) {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.includes(origin)) return true;
-  // Allow any *.vercel.app preview deployment owned by this project
   if (origin.match(/^https:\/\/secondinnings[^.]*\.vercel\.app$/)) return true;
   return false;
+}
+
+// ── Rate limiter (lazy-initialised so missing env vars don't crash cold starts)
+let ratelimit = null;
+function getRatelimit() {
+  if (ratelimit) return ratelimit;
+  const url   = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null; // Redis not configured — skip rate limiting
+  ratelimit = new Ratelimit({
+    redis: new Redis({ url, token }),
+    limiter: Ratelimit.slidingWindow(20, "60 s"), // 20 req / minute / IP
+    analytics: false,
+    prefix: "si_rl",
+  });
+  return ratelimit;
+}
+
+// Extract the real client IP from Vercel headers
+function getClientIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return req.socket?.remoteAddress || "unknown";
 }
 
 export default async function handler(req, res) {
@@ -53,12 +78,24 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // ── Origin enforcement (non-browser clients like curl have no Origin) ─────
-  // We log but do not hard-block missing origin to allow Vercel preview tests.
-  // For full lockdown, uncomment the block below:
-  // if (!isAllowedOrigin(origin)) {
-  //   return res.status(403).json({ error: "Forbidden" });
-  // }
+  // ── Rate limiting ─────────────────────────────────────────────────────────
+  const rl = getRatelimit();
+  if (rl) {
+    const ip = getClientIp(req);
+    try {
+      const { success, limit, remaining, reset } = await rl.limit(ip);
+      res.setHeader("X-RateLimit-Limit",     String(limit));
+      res.setHeader("X-RateLimit-Remaining", String(remaining));
+      res.setHeader("X-RateLimit-Reset",     String(reset));
+      if (!success) {
+        return res.status(429).json({
+          error: "Too many requests — please wait a moment before trying again.",
+        });
+      }
+    } catch {
+      // Redis unavailable — fail open so users aren't blocked by infra issues
+    }
+  }
 
   // ── API key ───────────────────────────────────────────────────────────────
   const key = process.env.ANTHROPIC_KEY;
@@ -136,7 +173,6 @@ export default async function handler(req, res) {
     const data = await upstream.json();
 
     if (!upstream.ok) {
-      // Forward Anthropic's error status but don't expose the raw response
       return res.status(upstream.status).json({
         error: data?.error?.message || "Upstream AI error",
       });
