@@ -167,6 +167,228 @@ const DECISION_FILTERS = [
   { q:"Does this align with my post-career path?", tag:"Direction" },
 ];
 
+const RESOURCES = {
+  "Switch to Academia / Teaching": {
+    courses: [
+      { title:"Teaching Portfolio Development", platform:"Coursera", url:"https://www.coursera.org/search?query=teaching+portfolio" },
+      { title:"Research Methodology for Practitioners", platform:"edX", url:"https://www.edx.org/search?q=research+methodology" },
+      { title:"Learning Design: The Art of Facilitation", platform:"LinkedIn Learning", url:"https://www.linkedin.com/learning/search?keywords=learning+design" },
+    ],
+    communities: [
+      { name:"Association of Indian Universities", url:"https://www.aiu.ac.in" },
+      { name:"NPTEL Faculty Network", url:"https://nptel.ac.in" },
+      { name:"LinkedIn Educators Group", url:"https://www.linkedin.com/search/results/groups/?keywords=educators" },
+      { name:"IIM / ISB Alumni Faculty Networks", url:"https://www.linkedin.com/search/results/groups/?keywords=IIM+alumni" },
+    ],
+    books: [
+      { title:"Make It Stick", author:"Peter Brown", url:"https://www.goodreads.com/search?q=Make+It+Stick+Peter+Brown" },
+      { title:"The Courage to Teach", author:"Parker Palmer", url:"https://www.goodreads.com/search?q=The+Courage+to+Teach+Parker+Palmer" },
+      { title:"Small Teaching", author:"James Lang", url:"https://www.goodreads.com/search?q=Small+Teaching+James+Lang" },
+    ],
+    channels: [
+      { name:"MIT OpenCourseWare", url:"https://www.youtube.com/@mitocw" },
+      { name:"NPTEL (YouTube)", url:"https://nptel.ac.in" },
+      { name:"Yale Open Courses", url:"https://oyc.yale.edu" },
+      { name:"TED-Ed", url:"https://www.youtube.com/@TEDed" },
+    ],
+  },
+  "Start own Business / Consulting": {
+    courses: [
+      { title:"Entrepreneurship: Launching an Innovative Business", platform:"Coursera", url:"https://www.coursera.org/search?query=entrepreneurship+launching+innovative+business" },
+      { title:"Strategy for Executives", platform:"edX (HBS Online)", url:"https://www.edx.org/search?q=strategy+executives" },
+      { title:"Consulting Essentials", platform:"LinkedIn Learning", url:"https://www.linkedin.com/learning/search?keywords=consulting+essentials" },
+    ],
+    communities: [
+      { name:"TiE Global", url:"https://tie.org" },
+      { name:"Entrepreneurs' Organization (EO)", url:"https://www.eonetwork.org" },
+      { name:"iSPIRT", url:"https://ispirt.in" },
+      { name:"Nasscom 10,000 Startups", url:"https://nasscom.in" },
+    ],
+    books: [
+      { title:"The Consulting Bible", author:"Alan Weiss", url:"https://www.goodreads.com/search?q=The+Consulting+Bible+Alan+Weiss" },
+      { title:"Built to Sell", author:"John Warrillow", url:"https://www.goodreads.com/search?q=Built+to+Sell+John+Warrillow" },
+      { title:"Zero to One", author:"Peter Thiel", url:"https://www.goodreads.com/search?q=Zero+to+One+Peter+Thiel" },
+    ],
+    channels: [
+      { name:"Y Combinator (YouTube)", url:"https://www.youtube.com/@ycombinator" },
+      { name:"My First Million (Podcast)", url:"https://www.mfmpod.com" },
+      { name:"Lex Fridman", url:"https://www.youtube.com/@lexfridman" },
+      { name:"CNBC Make It", url:"https://www.youtube.com/@CNBCMakeIt" },
+    ],
+  },
+  "Freelance / Advisory roles": {
+    courses: [
+      { title:"Freelance Business Fundamentals", platform:"LinkedIn Learning", url:"https://www.linkedin.com/learning/search?keywords=freelance+business" },
+      { title:"Negotiation & Contract Basics", platform:"Coursera", url:"https://www.coursera.org/search?query=negotiation+basics" },
+      { title:"Personal Branding for Experts", platform:"Udemy", url:"https://www.udemy.com/courses/search/?q=personal+branding" },
+    ],
+    communities: [
+      { name:"Toptal Expert Network", url:"https://www.toptal.com" },
+      { name:"IAOP Professionals", url:"https://www.iaop.org" },
+      { name:"World of Freelancers", url:"https://www.linkedin.com/search/results/groups/?keywords=freelancers" },
+      { name:"LinkedIn Freelancers Group", url:"https://www.linkedin.com/search/results/groups/?keywords=freelance+professionals" },
+    ],
+    books: [
+      { title:"Company of One", author:"Paul Jarvis", url:"https://www.goodreads.com/search?q=Company+of+One+Paul+Jarvis" },
+      { title:"The Free Agent Nation", author:"Daniel Pink", url:"https://www.goodreads.com/search?q=Free+Agent+Nation+Daniel+Pink" },
+      { title:"Atomic Habits", author:"James Clear", url:"https://www.goodreads.com/search?q=Atomic+Habits+James+Clear" },
+    ],
+    channels: [
+      { name:"Ali Abdaal (YouTube)", url:"https://www.youtube.com/@aliabdaal" },
+      { name:"Deep Work / Cal Newport (Podcast)", url:"https://www.calnewport.com/podcast/" },
+      { name:"The Tim Ferriss Show", url:"https://tim.blog/podcast/" },
+      { name:"My First Million (Podcast)", url:"https://www.mfmpod.com" },
+    ],
+  },
+  "Full Retirement": {
+    courses: [
+      { title:"Positive Psychology and Well-Being", platform:"Coursera (Yale)", url:"https://www.coursera.org/search?query=positive+psychology+well-being" },
+      { title:"Mindfulness-Based Stress Reduction", platform:"edX", url:"https://www.edx.org/search?q=mindfulness+stress+reduction" },
+      { title:"Personal Finance & Retirement Planning", platform:"Khan Academy", url:"https://www.khanacademy.org/college-careers-more/personal-finance" },
+    ],
+    communities: [
+      { name:"Senior Planet", url:"https://seniorplanet.org" },
+      { name:"Transitions Network", url:"https://www.transitionsnetwork.org" },
+      { name:"LinkedIn Retirement Lifestyle Groups", url:"https://www.linkedin.com/search/results/groups/?keywords=retirement+lifestyle" },
+      { name:"RetirementJoy Community", url:"https://www.linkedin.com/search/results/groups/?keywords=retirement+joy" },
+    ],
+    books: [
+      { title:"Die with Zero", author:"Bill Perkins", url:"https://www.goodreads.com/search?q=Die+with+Zero+Bill+Perkins" },
+      { title:"Younger Next Year", author:"Chris Crowley", url:"https://www.goodreads.com/search?q=Younger+Next+Year+Chris+Crowley" },
+      { title:"The Good Life", author:"Robert Waldinger", url:"https://www.goodreads.com/search?q=The+Good+Life+Robert+Waldinger" },
+    ],
+    channels: [
+      { name:"Huberman Lab", url:"https://www.youtube.com/@hubermanlab" },
+      { name:"Big Think", url:"https://www.youtube.com/@bigthink" },
+      { name:"Dhruv Rathee", url:"https://www.youtube.com/@dhruvrathee" },
+      { name:"Retirement Answer Man (Podcast)", url:"https://rogerwhitney.com/retirement-answer-man-podcast/" },
+    ],
+  },
+  "Part-time flexible work": {
+    courses: [
+      { title:"Designing Your Ideal Work Life", platform:"Coursera", url:"https://www.coursera.org/search?query=work+life+design" },
+      { title:"Digital Skills for the Modern Workplace", platform:"Google Grow", url:"https://grow.google/" },
+      { title:"Productivity & Time Design", platform:"Udemy", url:"https://www.udemy.com/courses/search/?q=productivity+time+design" },
+    ],
+    communities: [
+      { name:"Flexa Careers Community", url:"https://flexa.careers" },
+      { name:"Remote Year", url:"https://www.remoteyear.com" },
+      { name:"LinkedIn Open to Work", url:"https://www.linkedin.com/search/results/groups/?keywords=remote+work+professionals" },
+      { name:"Virtual Team Communities", url:"https://www.linkedin.com/search/results/groups/?keywords=virtual+team" },
+    ],
+    books: [
+      { title:"Four Thousand Weeks", author:"Oliver Burkeman", url:"https://www.goodreads.com/search?q=Four+Thousand+Weeks+Oliver+Burkeman" },
+      { title:"Rest", author:"Alex Soojung-Kim Pang", url:"https://www.goodreads.com/search?q=Rest+Alex+Soojung-Kim+Pang" },
+      { title:"Designing Your Life", author:"Bill Burnett & Dave Evans", url:"https://www.goodreads.com/search?q=Designing+Your+Life+Burnett+Evans" },
+    ],
+    channels: [
+      { name:"Deep Work / Cal Newport (Podcast)", url:"https://www.calnewport.com/podcast/" },
+      { name:"WorkLife with Adam Grant", url:"https://www.ted.com/podcasts/worklife" },
+      { name:"Notion HQ (YouTube)", url:"https://www.youtube.com/@NotionHQ" },
+      { name:"Wes Roth (YouTube)", url:"https://www.youtube.com/@WesRoth" },
+    ],
+  },
+  "NGO / Social Impact": {
+    courses: [
+      { title:"Social Entrepreneurship", platform:"Coursera (Copenhagen Business School)", url:"https://www.coursera.org/search?query=social+entrepreneurship" },
+      { title:"Nonprofit Management Essentials", platform:"edX", url:"https://www.edx.org/search?q=nonprofit+management" },
+      { title:"Human Rights & Development", platform:"FutureLearn", url:"https://www.futurelearn.com/search?q=human+rights+development" },
+    ],
+    communities: [
+      { name:"Dasra Accelerator Network", url:"https://dasra.org" },
+      { name:"Ashoka Changemakers", url:"https://www.ashoka.org" },
+      { name:"India Development Review (IDR)", url:"https://idronline.org" },
+      { name:"Give India Community", url:"https://giveindia.org" },
+    ],
+    books: [
+      { title:"Lean Impact", author:"Ann Mei Chang", url:"https://www.goodreads.com/search?q=Lean+Impact+Ann+Mei+Chang" },
+      { title:"The Purpose Economy", author:"Aaron Hurst", url:"https://www.goodreads.com/search?q=The+Purpose+Economy+Aaron+Hurst" },
+      { title:"Winners Take All", author:"Anand Giridharadas", url:"https://www.goodreads.com/search?q=Winners+Take+All+Anand+Giridharadas" },
+    ],
+    channels: [
+      { name:"TED Talks Social Good", url:"https://www.ted.com/topics/social+change" },
+      { name:"India Development Review", url:"https://idronline.org" },
+      { name:"Nonprofit Quarterly (Podcast)", url:"https://nonprofitquarterly.org/podcasts/" },
+      { name:"WorkLife with Adam Grant", url:"https://www.ted.com/podcasts/worklife" },
+    ],
+  },
+  "Creative Pursuits": {
+    courses: [
+      { title:"Creativity & Entrepreneurship", platform:"Coursera (Wesleyan)", url:"https://www.coursera.org/search?query=creativity+entrepreneurship" },
+      { title:"Writing for Personal Expression", platform:"Skillshare", url:"https://www.skillshare.com/en/search?query=writing+personal+expression" },
+      { title:"Design Thinking for Beginners", platform:"Coursera", url:"https://www.coursera.org/search?query=design+thinking" },
+    ],
+    communities: [
+      { name:"Behance Creative Network", url:"https://www.behance.net" },
+      { name:"NaNoWriMo Community", url:"https://nanowrimo.org" },
+      { name:"Creative Mornings", url:"https://creativemornings.com" },
+      { name:"Writers Side", url:"https://www.linkedin.com/search/results/groups/?keywords=writers+creative" },
+    ],
+    books: [
+      { title:"The Artist's Way", author:"Julia Cameron", url:"https://www.goodreads.com/search?q=The+Artist%27s+Way+Julia+Cameron" },
+      { title:"Steal Like an Artist", author:"Austin Kleon", url:"https://www.goodreads.com/search?q=Steal+Like+an+Artist+Austin+Kleon" },
+      { title:"Big Magic", author:"Elizabeth Gilbert", url:"https://www.goodreads.com/search?q=Big+Magic+Elizabeth+Gilbert" },
+    ],
+    channels: [
+      { name:"The Futur (YouTube)", url:"https://www.youtube.com/@thefutur" },
+      { name:"On Being (Podcast)", url:"https://onbeing.org/series/podcast/" },
+      { name:"Chase Jarvis LIVE", url:"https://www.chasejarvis.com/blog/" },
+      { name:"How I Built This (Podcast)", url:"https://www.npr.org/podcasts/510313/how-i-built-this" },
+    ],
+  },
+  "Not sure yet": {
+    courses: [
+      { title:"Designing Your Life", platform:"Coursera (Stanford d.school)", url:"https://www.coursera.org/search?query=designing+your+life" },
+      { title:"Ikigai: Find Your Reason for Being", platform:"Udemy", url:"https://www.udemy.com/courses/search/?q=ikigai" },
+      { title:"Career Decisions: From Insight to Impact", platform:"edX (Babson)", url:"https://www.edx.org/search?q=career+decisions" },
+    ],
+    communities: [
+      { name:"Transitions Network", url:"https://www.transitionsnetwork.org" },
+      { name:"Mid-Life Career Changers", url:"https://www.linkedin.com/search/results/groups/?keywords=mid+life+career+change" },
+      { name:"Designing Your Life Community", url:"https://www.linkedin.com/search/results/groups/?keywords=designing+your+life" },
+      { name:"LinkedIn Career Exploration", url:"https://www.linkedin.com/search/results/groups/?keywords=career+exploration" },
+    ],
+    books: [
+      { title:"Designing Your Life", author:"Bill Burnett & Dave Evans", url:"https://www.goodreads.com/search?q=Designing+Your+Life+Burnett" },
+      { title:"What Color Is Your Parachute?", author:"Richard N. Bolles", url:"https://www.goodreads.com/search?q=What+Color+Is+Your+Parachute" },
+      { title:"Transitions", author:"William Bridges", url:"https://www.goodreads.com/search?q=Transitions+William+Bridges" },
+    ],
+    channels: [
+      { name:"Brené Brown (Podcast)", url:"https://brenebrown.com/podcasts/" },
+      { name:"WorkLife with Adam Grant", url:"https://www.ted.com/podcasts/worklife" },
+      { name:"The Knowledge Project (Podcast)", url:"https://fs.blog/knowledge-project-podcast/" },
+      { name:"The Tim Ferriss Show", url:"https://tim.blog/podcast/" },
+    ],
+  },
+};
+
+function computeReadinessInsights(log) {
+  if (log.length < 2) return [];
+  const dims = [
+    { key:"financial", label:"Financial clarity" },
+    { key:"direction", label:"Direction clarity" },
+    { key:"energy",    label:"Energy & wellbeing" },
+    { key:"family",    label:"Family alignment" },
+    { key:"progress",  label:"Plan progress" },
+  ];
+  const recent = log.slice(-3);
+  const insights = [];
+  for (const d of dims) {
+    const vals = recent.map(w => w[d.key]);
+    const latest = vals[vals.length - 1];
+    const allDropping = vals.length >= 2 && vals.every((v,i) => i === 0 || v < vals[i-1]);
+    const allRising   = vals.length >= 3 && vals.every((v,i) => i === 0 || v >= vals[i-1]);
+    if (allDropping) {
+      insights.push({ type:"drop", msg:`${d.label} has dropped ${vals.length >= 3 ? "3 weeks" : "2 weeks"} in a row — set aside 15 minutes to identify the blocker.` });
+    } else if (latest < 5) {
+      insights.push({ type:"low", msg:`${d.label} is low (${latest}/10) — a small focused action this week could shift momentum.` });
+    } else if (allRising) {
+      insights.push({ type:"rise", msg:`${d.label} has improved 3 weeks straight — keep the current habit or routine going.` });
+    }
+  }
+  return insights.slice(0, 3);
+}
+
 // ── Personalisation helpers ────────────────────────────────────────────────────
 function buildCareerSteps(profession, postPath, yearsLeft) {
   const phases = [
@@ -1450,6 +1672,8 @@ export default function App() {
   const [chatMsgs, setChatMsgs] = useState([]);
   const [chatIn, setChatIn] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const [decAiAnalysis, setDecAiAnalysis] = useState(null);
+  const [decAiLoading, setDecAiLoading] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [user, setUser] = useState(null);
   const [showSubModal, setShowSubModal] = useState(false);
@@ -1706,6 +1930,36 @@ Guidelines:
     }
     setChatLoading(false);
     setTimeout(()=>chatRef.current?.scrollIntoView({ behavior:"smooth" }), 50);
+  };
+
+  // ── Decision Tool AI Analysis ─────────────────────────────────────────────
+  const analyzeDecision = async () => {
+    if (!decInput.text.trim() || decAiLoading) return;
+    setDecAiLoading(true);
+    setDecAiAnalysis(null);
+    const filterSummary = DECISION_FILTERS.map((f,i) => `${f.tag}: ${decAnswers[i] || "Not answered"}`).join("\n");
+    const system = `You are a calm, strategic life design advisor helping mid-career professionals make high-stakes decisions before their career transition.`;
+    const prompt = `Evaluate this decision for a ${profile?.profession || "professional"} planning to transition to ${profile?.postPath || "their next chapter"} in ${profile?.transitionAge && profile?.age ? parseInt(profile.transitionAge)-parseInt(profile.age) : "?"} years.
+
+Decision: "${decInput.text}"
+
+Filter scores:
+${filterSummary}
+
+Provide:
+1. A clear recommendation (1 sentence): Proceed / Reconsider / Avoid — and why
+2. The strongest reason TO do it (1 sentence)
+3. The biggest risk or concern (1 sentence)
+4. One specific action to reduce the risk or validate the decision before committing
+
+Keep it sharp, honest, and grounded in the person's transition context. No filler.`;
+    try {
+      const reply = await askClaude([{ role:"user", content:prompt }], system, 600);
+      setDecAiAnalysis(reply);
+    } catch(e) {
+      setDecAiAnalysis("Could not reach the AI. Please check your connection and try again.");
+    }
+    setDecAiLoading(false);
   };
 
   // ── AI Location Search ────────────────────────────────────────────────────
@@ -2513,6 +2767,23 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                     <span><span style={{ color:T.red+"88" }}>■</span> Needs work (&lt;5)</span>
                   </div>
                 </div>
+                {(() => {
+                  const insights = computeReadinessInsights(readinessLog);
+                  if (!insights.length) return null;
+                  return (
+                    <div style={{ ...card, borderLeft:`3px solid ${T.amber}` }}>
+                      <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:15, color:T.ink, marginBottom:12 }}>Trend Insights</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                        {insights.map((ins,i) => (
+                          <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                            <span style={{ fontSize:16, flexShrink:0 }}>{ins.type==="drop"?"↘":ins.type==="rise"?"↗":"⚠"}</span>
+                            <span style={{ fontSize:13, color:T.inkMid, lineHeight:1.6 }}>{ins.msg}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </>)}
               </div>
             </div>
@@ -2522,20 +2793,37 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
         {/* ── OPPORTUNITIES ── */}
         {tab==="academic" && (
           <div>
-            <h2 style={sTitle}>◳ Transition Opportunities</h2>
-            <p style={{ fontSize:13, color:T.inkLight, marginTop:4, marginBottom:24 }}>Tailored to {profile.profession} professionals pursuing {profile.postPath||"their next chapter"}</p>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:16, marginBottom:24 }}>
-              {tracks.map((t,i)=>(
-                <div key={i} style={{ ...card, borderLeft:`3px solid ${[T.accent,T.amber,T.inkLight][i]}` }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
-                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:18, color:T.ink }}>{t.title}</div>
-                    <span style={sTag(T.accent)}>Fit {t.fit}/10</span>
-                  </div>
-                  <div style={{ fontSize:13, color:T.inkMid, lineHeight:1.7, marginBottom:14 }}>{t.desc}</div>
-                  <Bar value={t.fit} color={[T.accent,T.amber,T.inkLight][i]} bg={T.bgMuted} height={8}/>
+            <h2 style={sTitle}>◳ Learning & Community Resources</h2>
+            <p style={{ fontSize:13, color:T.inkLight, marginTop:4, marginBottom:24 }}>Curated for <strong style={{ color:T.ink }}>{profile.postPath || "your chosen path"}</strong> — courses, communities, books, and channels worth exploring</p>
+            {(() => {
+              const res = RESOURCES[profile.postPath] || RESOURCES["Not sure yet"];
+              const sections = [
+                { label:"Courses", icon:"◎", items:res.courses.map(c=>({ text:`${c.title} (${c.platform})`, url:c.url })), color:T.accent },
+                { label:"Communities & Networks", icon:"◉", items:res.communities.map(c=>({ text:c.name, url:c.url })), color:T.amber },
+                { label:"Books", icon:"◈", items:res.books.map(b=>({ text:`${b.title} — ${b.author}`, url:b.url })), color:T.inkMid },
+                { label:"Channels & Podcasts", icon:"◐", items:res.channels.map(c=>({ text:c.name, url:c.url })), color:T.accent },
+              ];
+              return (
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:16, marginBottom:24 }}>
+                  {sections.map(sec=>(
+                    <div key={sec.label} style={{ ...card, borderTop:`3px solid ${sec.color}` }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+                        <span style={{ color:sec.color, fontSize:16 }}>{sec.icon}</span>
+                        <span style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink }}>{sec.label}</span>
+                      </div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                        {sec.items.map((item,i)=>(
+                          <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
+                            <span style={{ color:sec.color, fontWeight:700, fontSize:12, marginTop:2, flexShrink:0 }}>→</span>
+                            <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ fontSize:13, color:T.inkMid, lineHeight:1.5, textDecoration:"none", borderBottom:`1px dotted ${T.border}` }} onMouseEnter={e=>e.currentTarget.style.color=sec.color} onMouseLeave={e=>e.currentTarget.style.color=T.inkMid}>{item.text}</a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
             <div style={card}>
               <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:19, color:T.ink, marginBottom:20 }}>3-Step Outreach Strategy</div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
@@ -2576,18 +2864,32 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
               ))}
             </div>
             {answeredCount>=3 && decScore!==null && (
-              <div style={{ ...card, borderTop:`3px solid ${decScore>=70?T.accent:decScore>=40?T.amber:T.red}` }}>
-                <div style={{ display:"flex", gap:32, alignItems:"center" }}>
-                  <div style={{ textAlign:"center", minWidth:120 }}>
-                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:52, color:decScore>=70?T.accent:decScore>=40?T.amber:T.red }}>{decScore}%</div>
-                    <div style={{ fontSize:14, fontWeight:700, color:decScore>=70?T.accent:decScore>=40?T.amber:T.red, letterSpacing:"0.08em", textTransform:"uppercase" }}>{decScore>=70?"Proceed":decScore>=40?"Reconsider":"Avoid"}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:8 }}>{decInput.text?`"${decInput.text.slice(0,60)}${decInput.text.length>60?"…":""}"`:"Your decision"}</div>
-                    <div style={{ fontSize:13, color:T.inkMid, lineHeight:1.8 }}>{yesCount} of 6 filters passed · {noCount} concerns raised.{decScore<70?" A decision that fails your core filters increases the volatility you're working to reduce.":" This aligns with your life design principles. Proceed with intention."}</div>
+              <>
+                <div style={{ ...card, borderTop:`3px solid ${decScore>=70?T.accent:decScore>=40?T.amber:T.red}`, marginBottom:16 }}>
+                  <div style={{ display:"flex", gap:32, alignItems:"center" }}>
+                    <div style={{ textAlign:"center", minWidth:120 }}>
+                      <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:52, color:decScore>=70?T.accent:decScore>=40?T.amber:T.red }}>{decScore}%</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:decScore>=70?T.accent:decScore>=40?T.amber:T.red, letterSpacing:"0.08em", textTransform:"uppercase" }}>{decScore>=70?"Proceed":decScore>=40?"Reconsider":"Avoid"}</div>
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:8 }}>{decInput.text?`"${decInput.text.slice(0,60)}${decInput.text.length>60?"…":""}"`:"Your decision"}</div>
+                      <div style={{ fontSize:13, color:T.inkMid, lineHeight:1.8, marginBottom:14 }}>{yesCount} of 6 filters passed · {noCount} concerns raised.{decScore<70?" A decision that fails your core filters increases the volatility you're working to reduce.":" This aligns with your life design principles. Proceed with intention."}</div>
+                      <button onClick={analyzeDecision} disabled={decAiLoading} style={{ ...sBtn("primary"), opacity:decAiLoading?0.6:1 }}>
+                        {decAiLoading?"Analysing…":"◑ Get AI Analysis"}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+                {decAiAnalysis && (
+                  <div style={{ ...card, borderLeft:`3px solid ${T.accent}`, background:T.accentLight }}>
+                    <div style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:10 }}>
+                      <div style={{ width:28, height:28, borderRadius:"50%", background:T.accent+"22", border:`1px solid ${T.accent}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0 }}>◑</div>
+                      <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:15, color:T.ink }}>AI Analysis</div>
+                    </div>
+                    <div style={{ fontSize:13, color:T.ink, lineHeight:1.8, whiteSpace:"pre-wrap" }}>{decAiAnalysis}</div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
