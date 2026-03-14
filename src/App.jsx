@@ -1546,7 +1546,8 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
             {form.stressDrivers.length>0 && <div style={{ marginBottom:10 }}><div style={{ fontSize:11, color:T.inkLight, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, marginBottom:6 }}>Stress drivers</div><div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>{form.stressDrivers.map(d=><span key={d} style={{ background:T.redLight, border:`1px solid ${T.red}44`, borderRadius:20, padding:"3px 10px", fontSize:11, color:T.red, fontWeight:600 }}>{d}</span>)}</div></div>}
             {form.priorities.length>0 && <div style={{marginBottom:10}}><div style={{ fontSize:11, color:T.inkLight, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, marginBottom:6 }}>Top priorities</div><div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>{form.priorities.map(p=><span key={p} style={{ background:T.accentLight, border:`1px solid ${T.accent}44`, borderRadius:20, padding:"3px 10px", fontSize:11, color:T.accent, fontWeight:600 }}>{p}</span>)}</div></div>}
             {form.languages.length>0 && <div style={{marginBottom:10}}><div style={{ fontSize:11, color:T.inkLight, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, marginBottom:6 }}>Languages</div><div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>{form.languages.map(l=><span key={l} style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:20, padding:"3px 10px", fontSize:11, color:T.inkMid, fontWeight:600 }}>{l}</span>)}</div></div>}
-            {form.dependents && <div><div style={{ fontSize:11, color:T.inkLight, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, marginBottom:6 }}>Family</div><div style={{ display:"flex", flexWrap:"wrap", gap:6 }}><span style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:20, padding:"3px 10px", fontSize:11, color:T.inkMid, fontWeight:600 }}>{form.dependents}</span>{form.kidsSchooling&&<span style={{ background:T.amberLight, border:`1px solid ${T.amber}44`, borderRadius:20, padding:"3px 10px", fontSize:11, color:T.amber, fontWeight:600 }}>{form.kidsSchooling}</span>}{form.agingParents&&form.agingParents!=="Not applicable"&&<span style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:20, padding:"3px 10px", fontSize:11, color:T.inkMid, fontWeight:600 }}>{form.agingParents}</span>}</div></div>}
+            {form.dependents && <div style={{marginBottom:10}}><div style={{ fontSize:11, color:T.inkLight, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, marginBottom:6 }}>Family</div><div style={{ display:"flex", flexWrap:"wrap", gap:6 }}><span style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:20, padding:"3px 10px", fontSize:11, color:T.inkMid, fontWeight:600 }}>{form.dependents}</span>{form.kidsSchooling&&<span style={{ background:T.amberLight, border:`1px solid ${T.amber}44`, borderRadius:20, padding:"3px 10px", fontSize:11, color:T.amber, fontWeight:600 }}>{form.kidsSchooling}</span>}{form.agingParents&&form.agingParents!=="Not applicable"&&<span style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:20, padding:"3px 10px", fontSize:11, color:T.inkMid, fontWeight:600 }}>{form.agingParents}</span>}</div></div>}
+            {form.dependentNotes && <div><div style={{ fontSize:11, color:T.inkLight, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, marginBottom:6 }}>Family notes</div><div style={{ fontSize:12, color:T.inkMid, lineHeight:1.6, background:T.bgMuted, borderRadius:8, padding:"8px 12px" }}>{form.dependentNotes}</div></div>}
           </div>
         )}
 
@@ -1865,8 +1866,9 @@ export default function App() {
 <h2>Profile</h2>
 <div class="g3"><div class="card"><div class="lbl">Current Age</div><div class="val">${profile?.age||"—"}</div></div><div class="card"><div class="lbl">Target Transition</div><div class="val">Age ${profile?.transitionAge||"—"}</div></div><div class="card"><div class="lbl">Runway Left</div><div class="val">${yearsLeft} yrs</div></div></div>
 <div class="g2"><div class="card"><div class="lbl">Profession</div><div class="val sm">${profile?.profession||"—"}</div></div><div class="card"><div class="lbl">Post-Career Path</div><div class="val sm">${profile?.postPath||"—"}</div></div></div>
-<h2>Stress Drivers</h2><div style="margin:8px 0">${profile?.stressDrivers?.map(d=>`<span class="tag s">${d}</span>`).join("")||"—"}</div>
-<h2>Lifestyle Priorities</h2><div style="margin:8px 0">${profile?.priorities?.map(p=>`<span class="tag">${p}</span>`).join("")||"—"}</div>
+<h2>Stress Drivers</h2><div style="margin:8px 0">${profile?.stressDrivers?.map(d=>`<span class="tag s">${escapeHtml(d)}</span>`).join("")||"—"}</div>
+<h2>Lifestyle Priorities</h2><div style="margin:8px 0">${profile?.priorities?.map(p=>`<span class="tag">${escapeHtml(p)}</span>`).join("")||"—"}</div>
+${(profile?.dependents&&profile.dependents!=="None — just me")||profile?.dependentNotes?`<h2>Family Context</h2><div style="margin:8px 0">${profile?.dependents?`<span class="tag">${escapeHtml(profile.dependents)}</span>`:""}${profile?.kidsSchooling?` <span class="tag">${escapeHtml(profile.kidsSchooling)}</span>`:""}${profile?.agingParents&&profile.agingParents!=="Not applicable"?` <span class="tag">${escapeHtml(profile.agingParents)}</span>`:""}</div>${profile?.dependentNotes?`<div style="margin:6px 0;font-size:12px;color:#4A6358;line-height:1.6;background:#F7F3EE;border-radius:6px;padding:8px 12px;border-left:3px solid #E2DAD0">${escapeHtml(profile.dependentNotes)}</div>`:""}`:""}
 <h2>Financial Snapshot</h2>
 <div class="g3"><div class="card"><div class="lbl">Monthly Income</div><div class="val">₹${(fin.income/1000).toFixed(0)}k</div></div><div class="card"><div class="lbl">Monthly Expenses</div><div class="val">₹${(fin.expenses/1000).toFixed(0)}k</div></div><div class="card"><div class="lbl">Monthly Savings</div><div class="val" style="color:${monthlySave>0?"#5C8A6E":"#C0564A"}">₹${Math.abs(monthlySave/1000).toFixed(0)}k</div></div><div class="card"><div class="lbl">Current Savings</div><div class="val">₹${(fin.savings/100000).toFixed(1)}L</div></div><div class="card"><div class="lbl">Target Corpus</div><div class="val">₹${(targetCorpus/100000).toFixed(1)}L</div></div><div class="card"><div class="lbl">Progress</div><div class="val">${Math.round(progress)}%</div></div></div>
 <h2>Transition Tracks — ${profile?.profession}</h2>
@@ -1939,20 +1941,28 @@ Guidelines:
     setDecAiAnalysis(null);
     const filterSummary = DECISION_FILTERS.map((f,i) => `${f.tag}: ${decAnswers[i] || "Not answered"}`).join("\n");
     const system = `You are a calm, strategic life design advisor helping mid-career professionals make high-stakes decisions before their career transition.`;
-    const prompt = `Evaluate this decision for a ${profile?.profession || "professional"} planning to transition to ${profile?.postPath || "their next chapter"} in ${profile?.transitionAge && profile?.age ? parseInt(profile.transitionAge)-parseInt(profile.age) : "?"} years.
+    const yearsAway = profile?.transitionAge && profile?.age ? parseInt(profile.transitionAge)-parseInt(profile.age) : null;
+    const prompt = `Evaluate this decision for ${profile?.name || "a professional"}, a ${profile?.profession || "professional"} planning to transition to ${profile?.postPath || "their next chapter"}${yearsAway ? ` in ${yearsAway} years` : ""}.
 
 Decision: "${decInput.text}"
 
-Filter scores:
+Full profile context:
+- Stress drivers they want to escape: ${profile?.stressDrivers?.join(", ") || "not specified"}
+- Top lifestyle priorities: ${profile?.priorities?.join(", ") || "not specified"}
+- Family situation: ${profile?.dependents || "not specified"}${profile?.kidsSchooling ? ` · Children: ${profile.kidsSchooling}` : ""}${profile?.agingParents && profile.agingParents !== "Not applicable" ? ` · Ageing parents: ${profile.agingParents}` : ""}
+- Family notes: ${profile?.dependentNotes || "none"}
+- Financial progress: ${Math.round(progress)}% of target corpus built
+
+Filter scores (Yes = passes, Maybe = partial, No = concern):
 ${filterSummary}
 
 Provide:
 1. A clear recommendation (1 sentence): Proceed / Reconsider / Avoid — and why
-2. The strongest reason TO do it (1 sentence)
-3. The biggest risk or concern (1 sentence)
-4. One specific action to reduce the risk or validate the decision before committing
+2. The strongest reason TO do it given their specific context (1 sentence)
+3. The biggest risk given their family or financial situation (1 sentence)
+4. One specific action to reduce the risk or validate before committing
 
-Keep it sharp, honest, and grounded in the person's transition context. No filler.`;
+Be direct, personal, and grounded in their actual situation. No generic life-coach filler.`;
     try {
       const reply = await askClaude([{ role:"user", content:prompt }], system, 600);
       setDecAiAnalysis(reply);
@@ -2253,6 +2263,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                   ))}
                 </div>
                 {profile.priorities?.length>0 && <div style={{ marginTop:12, display:"flex", gap:6, flexWrap:"wrap" }}>{profile.priorities.map(p=><span key={p} style={sTag(T.accent)}>{p}</span>)}</div>}
+                {profile.dependentNotes && <div style={{ marginTop:12, padding:"10px 12px", background:T.bgMuted, borderRadius:8, borderLeft:`3px solid ${T.border}` }}><div style={{ ...sLabel, marginBottom:4 }}>Family notes</div><div style={{ fontSize:12, color:T.inkMid, lineHeight:1.6 }}>{profile.dependentNotes}</div></div>}
               </div>
             </div>
             {/* This week's focus */}
