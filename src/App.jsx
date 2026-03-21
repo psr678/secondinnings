@@ -758,7 +758,7 @@ function ThemePanel({ current, onSelect, onClose, T }) {
   return (
     <div role="dialog" aria-modal="true" aria-label="Choose theme" style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", alignItems:"flex-start", justifyContent:"flex-end" }}>
       <button onClick={onClose} aria-label="Close theme panel" style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)", border:"none", cursor:"pointer", width:"100%", height:"100%" }} />
-      <div style={{ position:"relative", width:400, height:"100vh", background:T.bgCard, borderLeft:`1px solid ${T.border}`, overflowY:"auto", padding:24, boxShadow:"-8px 0 32px rgba(0,0,0,0.3)" }}>
+      <div className="theme-panel" style={{ position:"relative", width:400, height:"100vh", background:T.bgCard, borderLeft:`1px solid ${T.border}`, overflowY:"auto", padding:24, boxShadow:"-8px 0 32px rgba(0,0,0,0.3)" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
           <div>
             <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink }}>Choose Theme</div>
@@ -851,12 +851,12 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
       <div style={{ background:T.bg, fontFamily:"'Lato',sans-serif", overflowX:"hidden" }}>
 
         {/* ── STICKY NAVBAR ─────────────────────────────────────────────────── */}
-        <nav style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, background:T.bgCard+"EE", backdropFilter:"blur(12px)", borderBottom:`1px solid ${T.border}`, padding:"0 48px", display:"flex", alignItems:"center", justifyContent:"space-between", height:64 }}>
+        <nav className="lnd-nav" style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, background:T.bgCard+"EE", backdropFilter:"blur(12px)", borderBottom:`1px solid ${T.border}`, padding:"0 48px", display:"flex", alignItems:"center", justifyContent:"space-between", height:64 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <div style={{ width:28, height:28, borderRadius:7, background:T.accent, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>🌿</div>
             <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink }}>SecondInni<span style={{ color:T.red, fontStyle:"italic" }}>_</span>gs</div>
           </div>
-          <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+          <div className="lnd-nav-links" style={{ display:"flex", gap:4, alignItems:"center" }}>
             {[["Purpose","#purpose"],["Your Journey","#journey"],["Why It Matters","#why"],["Choose Your Path","#pricing"]].map(([label,href])=>(
               <a key={label} href={href} style={{ padding:"7px 16px", color:T.inkMid, fontSize:13, fontWeight:600, textDecoration:"none", borderRadius:8, transition:"all 0.15s", fontFamily:"'Lato',sans-serif" }}
                 onMouseEnter={e=>{ e.currentTarget.style.color=T.accent; e.currentTarget.style.background=T.accentLight; }}
@@ -977,12 +977,12 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
         </div>
 
         {/* ── SECTION: PITCH — YOUR NEXT CHAPTER ───────────────────────────── */}
-        <div id="pitch" style={{ background:T.bg, padding:"80px 60px", borderTop:`1px solid ${T.border}` }}>
-          <div style={{ maxWidth:1100, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr 1fr", gap:64, alignItems:"center" }}>
+        <div id="pitch" className="lnd-section" style={{ background:T.bg, padding:"80px 60px", borderTop:`1px solid ${T.border}` }}>
+          <div className="lnd-g2" style={{ maxWidth:1100, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr 1fr", gap:64, alignItems:"center" }}>
             {/* Left: headline + description */}
             <div>
               <div style={{ display:"inline-block", fontSize:11, color:T.accent, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:20, background:T.accentLight, border:`1px solid ${T.accent}33`, borderRadius:20, padding:"5px 16px" }}>Your Next Chapter</div>
-              <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:48, color:T.ink, lineHeight:1.15, margin:"0 0 24px" }}>
+              <h2 className="lnd-h2" style={{ fontFamily:"'DM Serif Display',serif", fontSize:48, color:T.ink, lineHeight:1.15, margin:"0 0 24px" }}>
                 Your next chapter.<br/><span style={{ color:T.accent }}>Designed by you.</span>
               </h2>
               <p style={{ fontSize:16, color:T.inkMid, lineHeight:1.85, margin:"0 0 36px" }}>
@@ -1018,18 +1018,18 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
         </div>
 
         {/* ── SECTION 1: PURPOSE — WHAT IS SECOND INNINGS ───────────────────── */}
-        <div id="purpose" style={{ background:T.bgCard, padding:"90px 60px" }}>
+        <div id="purpose" className="lnd-section" style={{ background:T.bgCard, padding:"90px 60px" }}>
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
             <div style={{ textAlign:"center", marginBottom:64 }}>
               <div style={{ display:"inline-block", fontSize:11, color:T.accent, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:16, background:T.accentLight, border:`1px solid ${T.accent}33`, borderRadius:20, padding:"5px 14px" }}>Our Purpose</div>
-              <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 20px 0", lineHeight:1.18 }}>
+              <h2 className="lnd-h2" style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 20px 0", lineHeight:1.18 }}>
                 What is Second Innings?
               </h2>
               <p style={{ fontSize:16, color:T.inkMid, lineHeight:1.85, maxWidth:640, margin:"0 auto" }}>
                 A platform built for mid-career professionals who are ready to design the next phase of their life — on their own terms, with clarity and confidence.
               </p>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:24 }}>
+            <div className="lnd-g4" style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:24 }}>
               {[
                 { icon:"🎯", title:"New Opportunities", desc:"Discover career paths, businesses, and lifestyles tailored to your skills, experience, and dreams — far beyond what a typical job board shows.", color:T.accent },
                 { icon:"🧭", title:"Guided Planning", desc:"Real, actionable plans — not just inspiration. Financial runway, career roadmaps, and location intelligence to ground your vision.", color:T.amber },
@@ -1054,19 +1054,19 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
         </div>
 
         {/* ── SECTION 2: HOW IT HELPS — 3 STEPS ────────────────────────────── */}
-        <div id="journey" style={{ background:T.bg, padding:"90px 60px" }}>
+        <div id="journey" className="lnd-section" style={{ background:T.bg, padding:"90px 60px" }}>
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
             <div style={{ textAlign:"center", marginBottom:64 }}>
               <div style={{ display:"inline-block", fontSize:11, color:T.amber, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:16, background:T.amberLight, border:`1px solid ${T.amber}33`, borderRadius:20, padding:"5px 14px" }}>Your Journey</div>
-              <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 20px 0", lineHeight:1.18 }}>
+              <h2 className="lnd-h2" style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 20px 0", lineHeight:1.18 }}>
                 How Second Innings Helps You
               </h2>
               <p style={{ fontSize:16, color:T.inkMid, lineHeight:1.85, maxWidth:580, margin:"0 auto" }}>
                 Three clear steps from feeling stuck to living with purpose — in the next phase of your life.
               </p>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:32, position:"relative" }}>
-              <div style={{ position:"absolute", top:68, left:"17%", right:"17%", height:2, background:`linear-gradient(90deg, ${T.accent}55, ${T.amber}55, ${T.accent}55)`, zIndex:0 }} />
+            <div className="lnd-g3" style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:32, position:"relative" }}>
+              <div className="lnd-line-divider" style={{ position:"absolute", top:68, left:"17%", right:"17%", height:2, background:`linear-gradient(90deg, ${T.accent}55, ${T.amber}55, ${T.accent}55)`, zIndex:0 }} />
               {[
                 { step:"01", icon:"🔍", title:"Discover", subtitle:"Find What's Possible", desc:"Complete a 6-step personalised assessment revealing opportunities matched to your profession, life stage, values, and what truly matters to you.", highlight:T.accent, light:T.accentLight },
                 { step:"02", icon:"📋", title:"Plan", subtitle:"Build Your Roadmap", desc:"Use our financial calculator, career roadmap, and location finder to create a concrete, data-driven plan — not just a vision board or a wish list.", highlight:T.amber, light:T.amberLight },
@@ -1092,12 +1092,12 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
         </div>
 
         {/* ── SECTION 3: WHY IT MATTERS ─────────────────────────────────────── */}
-        <div id="why" style={{ background:T.bgCard, padding:"90px 60px" }}>
+        <div id="why" className="lnd-section" style={{ background:T.bgCard, padding:"90px 60px" }}>
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:80, alignItems:"center" }}>
+            <div className="lnd-g2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:80, alignItems:"center" }}>
               <div>
                 <div style={{ display:"inline-block", fontSize:11, color:T.accent, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:16, background:T.accentLight, border:`1px solid ${T.accent}33`, borderRadius:20, padding:"5px 14px" }}>Why It Matters</div>
-                <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 24px 0", lineHeight:1.18 }}>
+                <h2 className="lnd-h2" style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 24px 0", lineHeight:1.18 }}>
                   Life doesn't stop<br/>at <span style={{ color:T.accent }}>one chapter.</span>
                 </h2>
                 <p style={{ fontSize:15, color:T.inkMid, lineHeight:1.85, marginBottom:20 }}>
@@ -1139,18 +1139,18 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
         </div>
 
         {/* ── SECTION 4: MONETIZATION — HOW WE SUSTAIN THIS ─────────────────── */}
-        <div id="pricing" style={{ background:T.bg, padding:"90px 60px" }}>
+        <div id="pricing" className="lnd-section" style={{ background:T.bg, padding:"90px 60px" }}>
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
             <div style={{ textAlign:"center", marginBottom:64 }}>
               <div style={{ display:"inline-block", fontSize:11, color:T.amber, textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:16, background:T.amberLight, border:`1px solid ${T.amber}33`, borderRadius:20, padding:"5px 14px" }}>Go Deeper</div>
-              <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 20px 0", lineHeight:1.18 }}>
+              <h2 className="lnd-h2" style={{ fontFamily:"'DM Serif Display',serif", fontSize:42, color:T.ink, margin:"0 0 20px 0", lineHeight:1.18 }}>
                 Choose Your Path
               </h2>
               <p style={{ fontSize:16, color:T.inkMid, lineHeight:1.85, maxWidth:600, margin:"0 auto" }}>
                 Start completely free. Unlock expert guidance and premium tools when you're ready to move from planning into action.
               </p>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:28 }}>
+            <div className="lnd-g3" style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:28 }}>
               {[
                 {
                   tier:"Free",
@@ -1205,7 +1205,7 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
                 </div>
               ))}
             </div>
-            <div style={{ marginTop:52, display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:22 }}>
+            <div className="lnd-g3" style={{ marginTop:52, display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:22 }}>
               {[
                 { icon:"🤝", title:"Partner Referrals", desc:"Connect with vetted financial advisors, career coaches, and relocation consultants through our trusted partner network. Earn commissions on every referral." },
                 { icon:"📚", title:"Curated Skill Courses", desc:"Access hand-picked upskilling courses for your chosen post-career path — from consulting to creative arts to agri-tourism and sustainable farming." },
@@ -1222,12 +1222,12 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
         </div>
 
         {/* ── CTA SECTION ───────────────────────────────────────────────────── */}
-        <div style={{ background:"linear-gradient(135deg, #0D1F17 0%, #1C3A2E 50%, #3A6B4A 100%)", padding:"110px 60px", textAlign:"center", position:"relative", overflow:"hidden" }}>
+        <div className="lnd-cta-section" style={{ background:"linear-gradient(135deg, #0D1F17 0%, #1C3A2E 50%, #3A6B4A 100%)", padding:"110px 60px", textAlign:"center", position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:-100, left:-100, width:500, height:500, borderRadius:"50%", border:"1px solid rgba(255,255,255,0.04)" }}/>
           <div style={{ position:"absolute", bottom:-80, right:-80, width:400, height:400, borderRadius:"50%", background:"rgba(196,135,58,0.1)" }}/>
           <div style={{ position:"relative", zIndex:1, maxWidth:680, margin:"0 auto" }}>
             <div style={{ display:"inline-block", fontSize:11, color:"rgba(255,255,255,0.5)", textTransform:"uppercase", letterSpacing:"0.2em", fontWeight:700, marginBottom:20, border:"1px solid rgba(255,255,255,0.15)", borderRadius:20, padding:"5px 16px" }}>Your Time is Now</div>
-            <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:50, color:"#fff", margin:"0 0 24px 0", lineHeight:1.14 }}>
+            <h2 className="lnd-h2" style={{ fontFamily:"'DM Serif Display',serif", fontSize:50, color:"#fff", margin:"0 0 24px 0", lineHeight:1.14 }}>
               Start Your Second<br/>Innings Today
             </h2>
             <p style={{ fontSize:16, color:"rgba(255,255,255,0.65)", lineHeight:1.9, maxWidth:520, margin:"0 auto 52px auto" }}>
@@ -1250,7 +1250,7 @@ function Onboarding({ onComplete, T, isEditing=false, initialForm=null, onCancel
         </div>
 
         {/* ── FOOTER ────────────────────────────────────────────────────────── */}
-        <div style={{ background:T.bgCard, borderTop:`1px solid ${T.border}`, padding:"32px 60px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:20 }}>
+        <div className="lnd-footer" style={{ background:T.bgCard, borderTop:`1px solid ${T.border}`, padding:"32px 60px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:20 }}>
           <div>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <div style={{ width:26, height:26, borderRadius:6, background:T.accent, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>🌿</div>
@@ -2071,14 +2071,14 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
   return (
     <div style={{ height:"100vh", background:T.bg, fontFamily:"'Lato',sans-serif", color:T.ink, display:"flex", flexDirection:"column", overflow:"hidden" }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
-      <style>{`.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0} *{box-sizing:border-box} input[type=range]{accent-color:${T.accent}} @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}} .fade{animation:fadeUp 0.35s ease forwards} @keyframes dot{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}} button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid ${T.accent}!important;outline-offset:2px!important} .si-input:focus{border-color:${T.accent}!important;box-shadow:0 0 0 3px ${T.accent}33!important} .tab-bar::-webkit-scrollbar{height:3px} .tab-bar::-webkit-scrollbar-thumb{background:${T.border};border-radius:2px} @media(max-width:900px){.g4{grid-template-columns:1fr 1fr!important}.g3{grid-template-columns:1fr 1fr!important}.g2-fin{grid-template-columns:1fr!important}.hdr-info{display:none!important}.hdr-actions{gap:8px!important}} @media(max-width:600px){.g4{grid-template-columns:1fr!important}.g3{grid-template-columns:1fr!important}.g2{grid-template-columns:1fr!important}.mob-stack{flex-direction:column!important}.mob-pad{padding:16px 14px!important}.landing-right{display:none!important}.landing-left{flex:unset!important;width:100%!important;padding:40px 24px!important}.landing-h1{font-size:34px!important}.tab-bar{gap:2px!important}.tab-bar button{padding:6px 10px!important;font-size:11px!important}}`}</style>
+      <style>{`.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0} *{box-sizing:border-box} input[type=range]{accent-color:${T.accent}} @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}} .fade{animation:fadeUp 0.35s ease forwards} @keyframes dot{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}} button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid ${T.accent}!important;outline-offset:2px!important} .si-input:focus{border-color:${T.accent}!important;box-shadow:0 0 0 3px ${T.accent}33!important} .tab-bar::-webkit-scrollbar{height:3px} .tab-bar::-webkit-scrollbar-thumb{background:${T.border};border-radius:2px} @media(max-width:900px){.g4{grid-template-columns:1fr 1fr!important}.g3{grid-template-columns:1fr 1fr!important}.g2-fin{grid-template-columns:1fr!important}.hdr-info{display:none!important}.hdr-actions{gap:8px!important} .hdr-progress{display:none!important} .hdr-redo{display:none!important} .lnd-section{padding:60px 32px!important} .lnd-g4{grid-template-columns:1fr 1fr!important} .lnd-g3{grid-template-columns:1fr 1fr!important} .lnd-nav{padding:0 24px!important}} @media(max-width:600px){.g4{grid-template-columns:1fr!important}.g3{grid-template-columns:1fr!important}.g2{grid-template-columns:1fr!important}.mob-stack{flex-direction:column!important}.mob-pad{padding:16px 14px!important}.landing-right{display:none!important}.landing-left{flex:unset!important;width:100%!important;padding:40px 24px!important}.landing-h1{font-size:34px!important}.tab-bar{gap:2px!important}.tab-bar button{padding:6px 10px!important;font-size:11px!important} .lnd-section{padding:48px 20px!important} .lnd-g4,.lnd-g3{grid-template-columns:1fr!important;gap:16px!important} .lnd-g2{grid-template-columns:1fr!important;gap:24px!important} .lnd-nav-links{display:none!important} .lnd-nav{padding:0 16px!important} .lnd-cta-section{padding:60px 20px!important} .lnd-footer{padding:24px 20px!important;flex-direction:column!important;align-items:flex-start!important} .hdr-pad{padding:0 14px!important} .body-pad{padding:20px 14px!important} .theme-panel{width:100vw!important} .lnd-line-divider{display:none!important} .hdr-theme-text{display:none!important} .hdr-signin{display:none!important} .hdr-upgrade-text{display:none!important} .lnd-h2{font-size:30px!important;line-height:1.3!important} .lnd-h2-sm{font-size:26px!important;line-height:1.3!important}}`}</style>
 
       {showThemes && <ThemePanel current={themeId} onSelect={id=>{setThemeId(id)}} onClose={()=>setShowThemes(false)} T={T}/>}
       {showSubModal && <SubscriptionModal user={user} onClose={()=>setShowSubModal(false)} googleBtnRef={googleBtnRef} T={T}/>}
 
       {/* Header */}
       <div style={{ background:T.bgCard, borderBottom:`1px solid ${T.border}`, position:"sticky", top:0, zIndex:200, boxShadow:T.shadow }}>
-        <div style={{ padding:"0 28px" }}>
+        <div className="hdr-pad" style={{ padding:"0 28px" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", height:58 }}>
             <div style={{ display:"flex", alignItems:"center", gap:16 }}>
               <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:21, color:T.ink }}>SecondInni<span style={{ color:T.red, fontStyle:"italic" }}>_</span>gs</div>
@@ -2086,18 +2086,18 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
               <div className="hdr-info" style={{ fontSize:13, color:T.inkMid }}>{profile.name||"Your"} · {profile.profession} · Age {profile.age} → {profile.transitionAge}</div>
             </div>
             <div className="hdr-actions" style={{ display:"flex", gap:10, alignItems:"center" }}>
-              <div style={{ textAlign:"right" }}>
+              <div className="hdr-progress" style={{ textAlign:"right" }}>
                 <div style={sLabel}>Roadmap</div>
                 <div style={{ fontSize:13, color:T.accent, fontWeight:700 }}>{careerPct}% done</div>
               </div>
-              <div role="progressbar" aria-valuenow={careerPct} aria-valuemin={0} aria-valuemax={100} aria-label={`Career roadmap: ${careerPct}% complete`} style={{ width:80, height:6, background:T.bgMuted, borderRadius:3, overflow:"hidden" }}>
+              <div className="hdr-progress" role="progressbar" aria-valuenow={careerPct} aria-valuemin={0} aria-valuemax={100} aria-label={`Career roadmap: ${careerPct}% complete`} style={{ width:80, height:6, background:T.bgMuted, borderRadius:3, overflow:"hidden" }}>
                 <div aria-hidden="true" style={{ width:`${careerPct}%`, height:"100%", background:T.accent, borderRadius:3, transition:"width 0.6s" }}/>
               </div>
               {/* Theme button */}
               <button onClick={()=>setShowThemes(true)} aria-label="Change colour theme" style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:8, padding:"7px 14px", color:T.inkMid, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontFamily:"'Lato',sans-serif" }}>
                 <div aria-hidden="true" style={{ width:10, height:10, borderRadius:"50%", background:T.accent }}/>
                 <div aria-hidden="true" style={{ width:10, height:10, borderRadius:"50%", background:T.amber }}/>
-                Theme
+                <span className="hdr-theme-text">Theme</span>
               </button>
               {/* User / login area */}
               {user ? (
@@ -2114,11 +2114,11 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 </div>
               ) : (
                 <div style={{ display:"flex", gap:8 }}>
-                  <button onClick={()=>setShowSubModal(true)} style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:8, padding:"7px 14px", color:T.inkMid, fontSize:12, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>Sign In</button>
-                  <button onClick={()=>setShowSubModal(true)} style={{ background:T.accent, border:`1px solid ${T.accent}`, borderRadius:8, padding:"7px 14px", color:T.dark?"#111":"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>↑ Upgrade</button>
+                  <button className="hdr-signin" onClick={()=>setShowSubModal(true)} style={{ background:T.bgMuted, border:`1px solid ${T.border}`, borderRadius:8, padding:"7px 14px", color:T.inkMid, fontSize:12, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>Sign In</button>
+                  <button onClick={()=>setShowSubModal(true)} style={{ background:T.accent, border:`1px solid ${T.accent}`, borderRadius:8, padding:"7px 14px", color:T.dark?"#111":"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'Lato',sans-serif" }}>↑ <span className="hdr-upgrade-text">Upgrade</span></button>
                 </div>
               )}
-              <button style={{ ...sBtn("ghost"), fontSize:11, padding:"6px 12px" }} onClick={()=>setShowResetConfirm(true)}>↺ Re-do</button>
+              <button className="hdr-redo" style={{ ...sBtn("ghost"), fontSize:11, padding:"6px 12px" }} onClick={()=>setShowResetConfirm(true)}>↺ Re-do</button>
             </div>
           </div>
           <div className="tab-bar" role="tablist" aria-label="Portal sections" style={{ display:"flex", gap:4, paddingBottom:10, overflowX:"auto" }}>
@@ -2140,12 +2140,12 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
       </div>
 
       {/* Body */}
-      <div style={{ padding:"32px 28px" }} className="fade">
+      <div style={{ padding:"32px 28px" }} className="fade body-pad">
 
         {/* ── OVERVIEW ── */}
         {tab==="dashboard" && (
           <div>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:28 }}>
+            <div className="mob-stack" style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:28, gap:12 }}>
               <div>
                 <h1 style={{ ...sTitle, fontSize:30 }}>{profile.name?`Good to have you, ${profile.name}.`:"Your Life Design Overview"}</h1>
                 <p style={{ fontSize:13, color:T.inkLight, marginTop:6 }}>Track your key metrics and milestones — all in one place.</p>
@@ -2207,7 +2207,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
               </div>
 
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
+            <div className="g2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
               <div style={card}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
                   <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink }}>Transition Readiness</div>
@@ -2231,7 +2231,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                   <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink }}>Your Profile</div>
                   <button onClick={()=>setShowEditProfile(true)} style={{ ...sBtn("ghost"), padding:"5px 12px", fontSize:11 }}>✎ Edit</button>
                 </div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <div className="g2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                   {[
                     ["Profession",profile.profession||"—"],
                     ["Post-career",profile.postPath||"—"],
@@ -2274,7 +2274,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
 
             <div style={card}>
               <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:16 }}>Recommended Transition Tracks — {profile.profession}</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
+              <div className="g3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
                 {tracks.map((t,i)=>(
                   <div key={i} style={{ background:T.bgMuted, borderRadius:12, padding:16, border:`1px solid ${T.border}`, borderTop:`2px solid ${[T.accent,T.amber,T.inkLight][i]}` }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
@@ -2385,7 +2385,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                   </div>
                 </div>
 
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14, marginBottom:28 }}>
+                <div className="g3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14, marginBottom:28 }}>
                   {filteredLocs.map((loc)=>{
                     const sel=selLoc.includes(loc.name);
                     const isTop = topLoc && loc.name === topLoc.name && locFilter === "All";
@@ -2434,7 +2434,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 {compLocs.length>=2 && (
                   <div>
                     <h3 style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, color:T.ink, marginBottom:16 }}>Side-by-side Comparison</h3>
-                    <div style={{ display:"grid", gridTemplateColumns:`repeat(${compLocs.length},1fr)`, gap:16, marginBottom:20 }}>
+                    <div className="g2" style={{ display:"grid", gridTemplateColumns:`repeat(${compLocs.length},1fr)`, gap:16, marginBottom:20 }}>
                       {compLocs.map(loc=>(
                         <div key={loc.name} style={card}>
                           <div style={{ textAlign:"center", marginBottom:12 }}>
@@ -2461,7 +2461,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                     </div>
                     <div style={card}>
                       <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:16 }}>Comparison Table</div>
-                      <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                      <div style={{ overflowX:"auto" }}><table style={{ width:"100%", borderCollapse:"collapse", fontSize:13, minWidth:320 }}>
                         <thead><tr style={{ borderBottom:`2px solid ${T.border}` }}>
                           <th style={{ textAlign:"left", padding:"8px 12px", color:T.inkLight, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em" }}>Dimension</th>
                           {compLocs.map(l=><th key={l.name} style={{ textAlign:"center", padding:"8px 12px", fontFamily:"'DM Serif Display',serif", color:T.ink, fontWeight:400, fontSize:16 }}>{l.name}</th>)}
@@ -2475,7 +2475,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                             </tr>);
                           })}
                         </tbody>
-                      </table>
+                      </table></div>
                     </div>
                   </div>
                 )}
@@ -2500,7 +2500,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
             </div>
             <div style={card}>
               <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:19, color:T.ink, marginBottom:20 }}>Core Operating Principles</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
+              <div className="g3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
                 {buildPrinciples(profile).map(pr=>(
                   <div key={pr.title} style={{ background:T.bgMuted, borderRadius:10, padding:16, border:`1px solid ${T.border}` }}>
                     <div style={{ fontSize:20, color:T.accent, marginBottom:6 }}>{pr.icon}</div>
@@ -2536,7 +2536,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 </div>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
+                <div className="g3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
                   {[{ label:"Target Corpus", value:`₹${(targetCorpus/100000).toFixed(1)}L`, color:T.ink },{ label:"Current Progress", value:`${Math.round(progress)}%`, color:T.accent },{ label:"Time Remaining", value:monthsLeft>600?"Adjust rate":`${Math.ceil(monthsLeft/12)}y ${monthsLeft%12}m`, color:monthsLeft<120?T.accent:T.amber }].map(k=>(
                     <div key={k.label} style={{ ...cardSm, textAlign:"center" }}><div style={sLabel}>{k.label}</div><div style={{ fontFamily:"'DM Serif Display',serif", fontSize:24, color:k.color, margin:"8px 0" }}>{k.value}</div></div>
                   ))}
@@ -2578,7 +2578,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                   {(() => {
                     const { monthlySave:ms2, targetCorpus:tc2, progress:pr2, monthsLeft:ml2 } = calcFinancials(fin2.income, fin2.expenses, fin2.savings, fin2.targetYears);
                     return (
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+                      <div className="g2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
                         <div>
                           <div style={{ fontSize:13, color:T.inkMid, marginBottom:12 }}>Adjust numbers for Scenario B:</div>
                           {[["Monthly Income","income","₹"],["Monthly Expenses","expenses","₹"],["Current Savings","savings","₹"],["Target Runway (years)","targetYears",""]].map(([lbl,key,prefix])=>(
@@ -2629,7 +2629,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 const done=step.tasks.filter((_,ti)=>careerChecks[`${si}-${ti}`]).length;
                 return (
                   <div key={si} style={{ ...card, borderLeft:`3px solid ${done===4?T.accent:T.border}` }}>
-                    <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
+                    <div className="mob-stack" style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
                       <div style={{ minWidth:90, padding:"8px 12px", background:T.bgMuted, borderRadius:8, textAlign:"center" }}>
                         <div style={sLabel}>Phase</div>
                         <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:12, color:T.ink, lineHeight:1.4, marginTop:4 }}>{step.phase}</div>
@@ -2639,7 +2639,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                           <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:18, color:T.ink }}>{step.title}</div>
                           <span style={{ ...sTag(done===4?T.accent:T.amber), fontSize:12 }}>{done}/4</span>
                         </div>
-                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                        <div className="g2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                           {step.tasks.map((task,ti)=>{
                             const key=`${si}-${ti}`, checked=!!careerChecks[key];
                             return (
@@ -2658,7 +2658,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
             </div>
             <div style={card}>
               <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:19, color:T.ink, marginBottom:16 }}>Best-Fit Transition Tracks</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
+              <div className="g3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
                 {tracks.map((t,i)=>(
                   <div key={i} style={{ background:T.bgMuted, borderRadius:12, padding:18, border:`1px solid ${T.border}`, borderTop:`2px solid ${[T.accent,T.amber,T.inkLight][i]}` }}>
                     <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10 }}><span style={{ fontSize:20 }}>{["🥇","🥈","🥉"][i]}</span><span style={sTag(T.accent)}>{t.fit}/10</span></div>
@@ -2676,7 +2676,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
           <div>
             <h2 style={sTitle}>◐ Transition Readiness Check</h2>
             <p style={{ fontSize:13, color:T.inkLight, marginTop:4, marginBottom:24 }}>Track 5 key dimensions of your readiness each week. Scores rise as your plan takes shape and confidence grows.</p>
-            <div style={{ display:"grid", gridTemplateColumns:"340px 1fr", gap:20 }}>
+            <div className="g2-fin" style={{ display:"grid", gridTemplateColumns:"340px 1fr", gap:20 }}>
               <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
                 <div style={card}>
                   <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:20 }}>Log This Week</div>
@@ -2715,7 +2715,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                   </div>
                 )}
                 {readinessLog.length > 0 && (<>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
+                <div className="g3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
                   {[
                     { label:"Overall Readiness", value:`${overallReadiness}/10`, color:T.accent, sub:"Composite score" },
                     { label:"Strongest Area", value:READINESS_DIMS.reduce((a,b)=>latestReadiness[a.key]>=latestReadiness[b.key]?a:b).label, color:T.amber, sub:"Best dimension" },
@@ -2728,7 +2728,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                     </div>
                   ))}
                 </div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+                <div className="g2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
                   <div style={card}>
                     <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:T.ink, marginBottom:8 }}>Latest Snapshot</div>
                     <div style={{ display:"flex", justifyContent:"center" }}>
@@ -2800,7 +2800,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
                 { label:"Channels & Podcasts", icon:"◐", items:res.channels.map(c=>({ text:c.name, url:c.url })), color:T.accent },
               ];
               return (
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:16, marginBottom:24 }}>
+                <div className="g2" style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:16, marginBottom:24 }}>
                   {sections.map(sec=>(
                     <div key={sec.label} style={{ ...card, borderTop:`3px solid ${sec.color}` }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
@@ -2822,7 +2822,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
             })()}
             <div style={card}>
               <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:19, color:T.ink, marginBottom:20 }}>3-Step Outreach Strategy</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
+              <div className="g3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
                 {buildOutreachStrategy(profile?.postPath).map(s2=>(
                   <div key={s2.step} style={{ background:T.bgMuted, borderRadius:12, padding:20, border:`1px solid ${T.border}` }}>
                     <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:36, color:T.border, marginBottom:8 }}>{s2.step}</div>
@@ -2844,7 +2844,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
               <label style={{ ...sLabel, display:"block", marginBottom:8 }}>Decision to evaluate</label>
               <input style={sInput} placeholder={`e.g. "Take a 2-year international role to accelerate savings"`} value={decInput.text} onChange={e=>setDecInput({text:e.target.value})}/>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:24 }}>
+            <div className="g2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:24 }}>
               {DECISION_FILTERS.map((d,i)=>(
                 <div key={i} style={{ ...card, borderLeft:`3px solid ${decAnswers[i]==="Yes"?T.accent:decAnswers[i]==="No"?T.red:T.border}` }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
@@ -2862,7 +2862,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
             {answeredCount>=3 && decScore!==null && (
               <>
                 <div style={{ ...card, borderTop:`3px solid ${decScore>=70?T.accent:decScore>=40?T.amber:T.red}`, marginBottom:16 }}>
-                  <div style={{ display:"flex", gap:32, alignItems:"center" }}>
+                  <div className="mob-stack" style={{ display:"flex", gap:32, alignItems:"center" }}>
                     <div style={{ textAlign:"center", minWidth:120 }}>
                       <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:52, color:decScore>=70?T.accent:decScore>=40?T.amber:T.red }}>{decScore}%</div>
                       <div style={{ fontSize:14, fontWeight:700, color:decScore>=70?T.accent:decScore>=40?T.amber:T.red, letterSpacing:"0.08em", textTransform:"uppercase" }}>{decScore>=70?"Proceed":decScore>=40?"Reconsider":"Avoid"}</div>
@@ -2895,7 +2895,7 @@ Score each dimension from 1–10. overall should be a weighted average. Return e
           <div>
             <h2 style={sTitle}>◑ AI Life Coach</h2>
             <p style={{ fontSize:13, color:T.inkLight, marginTop:4, marginBottom:24 }}>One question at a time. Calm, strategic, personalised to your profile.</p>
-            <div style={{ ...card, display:"flex", flexDirection:"column", height:580 }}>
+            <div style={{ ...card, display:"flex", flexDirection:"column", height:"clamp(380px, 60vh, 580px)" }}>
 
               {/* Messages */}
               <div role="log" aria-live="polite" aria-label="Chat conversation" style={{ flex:1, overflowY:"auto", paddingBottom:12, paddingRight:4 }}>
